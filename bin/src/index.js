@@ -1,10 +1,10 @@
-const { Vidstreaming } = require('../dist/index');
+const { Vidstreaming } = require('../../dist/index');
 const fs = require('fs');
 const path = require('path');
 const { Spinner } = require('clui');
 const boxen = require('boxen');
 const chalk = require('chalk');
-const LoadingIcons = require('../utils/load_icons');
+const LoadingIcons = require('../../utils/load_icons');
 const loading = new Spinner('...', LoadingIcons);
 const boxenOptions = {
   padding: 1,
@@ -13,36 +13,59 @@ const boxenOptions = {
   dimBorder: true,
 };
 
+// This wil print the urls to the specified file
 const getUrls = (name, output, res) => {
+  // Initialize everything
   const vid = new Vidstreaming(name, res);
-  fs.writeFileSync(output, '');
+  fs.writeFileSync(output, null);
   loading.start();
   const stream = fs.createWriteStream(output, { flags: 'a+' });
+  loading.message('Printing urls to file...');
+
+  // Handler to be invoked when loaded
   const doneHandler = item => {
     const url = item.src;
     stream.cork();
-    stream.write(`
-${url}`);
+    stream.write(`${url}\n`);
     process.nextTick(() => stream.uncork());
   };
-  loading.message('Printing urls to file...\n\n');
-  vid.on('loaded', (data, length, item) => {
-    if (data === length) {
+  // Loaded listener
+  vid.on('loaded', (dataLength, length, item) => {
+    if (dataLength === length) {
       doneHandler(item);
       loading.stop();
       console.log('Done');
       process.exit(0);
     } else {
       process.stdout.clearLine();
-      loading.message(data + ' out of ' + length + ' - Done\n\n');
+      loading.message(dataLength + ' out of ' + length + ' - Done\n\n');
       doneHandler(item);
     }
   });
 };
 
+const logUrls = (name, res) => {
+  const vid = new Vidstreaming(name, res);
+  loading.start();
+  loading.message('Printing urls to console...\n\n');
+
+  // Loaded listener
+  vid.on('loaded', (dataLength, length, item) => {
+    if (dataLength === length) {
+      loading.stop();
+      console.log('Done');
+      process.exit(0);
+    } else {
+      process.stdout.clearLine();
+      loading.message(dataLength + ' out of ' + length + ' - Done\n\n');
+      console.log(item.src)
+    }
+  });
+};
+
+// CLI Arguments
 require('yargs')
   .scriptName('vidstreaming')
-  .usage('$0 <cmd>')
   .command(
     'search [name]',
     'Search for anime',
@@ -50,7 +73,7 @@ require('yargs')
       yargs.positional('name', {
         describe: 'name or string to search for',
         type: 'string',
-        demandOption: true,
+        demand: true,
       });
     },
     argv => {
@@ -74,14 +97,16 @@ require('yargs')
           );
         }
         if (!argv.O && argv.D) {
-          console.log(
-            `
-  Term          - ${argv.name}
-  Download Path - ${argv.D}
-  Quality       - ${argv.R || 'Original'}
-`
+          boxen(
+            'Term           -  ' +
+              argv.name +
+              '\nDownload Path  -  ' +
+              argv.D +
+              '\nQuality        -  ' +
+              argv.R || 'Original',
+            boxenOptions
           );
-          downloadUrls(argv.name, argv.D, argv.R);
+          // downloadUrls(argv.name, argv.D, argv.R);
         }
         if (argv.O && argv.D) {
           console.error(
@@ -89,29 +114,33 @@ require('yargs')
           );
         }
         if (!argv.O && !argv.D) {
-          console.log(
-            `
-  Term        - ${argv.name}
-  Quality     - ${argv.R || 'Original'}
-`
+          boxen(
+            'Term         -  ' + argv.name + 'Quality      -  ' + argv.R ||
+              'Original',
+            boxenOptions
           );
+          logUrls();
         }
       }
     }
   )
   .option('D', {
     alias: 'download',
-    describe: 'Download Anime to Dir',
+
+    describe:
+      'Download Anime to directory.\n(eg. "C:/Users/userXXX/Downloads")',
+    type: 'string',
   })
   .option('O', {
     alias: 'output',
-    describe: 'Output urls to txt',
+    describe:
+      'Output urls to txt.\n(eg. "C:/Users/userXXX/Downloads/jujutsu.txt")',
+    type: 'string',
   })
   .option('R', {
     alias: 'resolution',
     describe:
-      'Output resolution - 360, 480, 720, 1080. If none defaults to original quality',
-    choices: [360, 480, 720, 1080, 'HDP'],
+      'Output resolution - 360, 480, 720, 1080.\nIf none defaults to original quality.',
+    choices: [360, 480, 720, 1080],
   })
-  .showHelpOnFail(false, 'Specify --help for available options')
   .help().argv;

@@ -31,13 +31,16 @@ export class Vidstreaming extends EventEmitter {
             },
          });
          if (anime.data.content === '' || !anime.data.content) {
-            console.error('No anime found');
+            process.stdout.clearLine()
+            process.stdout.write('No anime found');
+            process.exit()
          }
          const $ = cheerio.load(anime.data.content);
          const link = $('ul a')[0].attribs.href;
          await this.getList(link);
       } catch (e) {
-         console.error(e);
+         console.error('Something went wrong');
+         process.exit()
       }
    }
 
@@ -74,12 +77,14 @@ export class Vidstreaming extends EventEmitter {
                      src,
                   });
                } catch (err) {
-                  throw err;
+                  console.error('Something went wrong');
+                  process.exit()
                }
             }
          );
       } catch (e) {
-         console.error(e);
+         console.error('Something went wrong');
+         process.exit()
       }
    }
    async getEpisodes(id) {
@@ -117,7 +122,7 @@ export class Vidstreaming extends EventEmitter {
          if (err) throw err;
          async.each(
             episodes.sort((a, b) => a.ep - b.ep),
-            async (data, cb) => {
+            async (data) => {
                try {
                   const stream = await axios.get(data.src, {
                      headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -134,13 +139,25 @@ export class Vidstreaming extends EventEmitter {
                      filename = data.ep + data.ext;
                   }
                   const out = fs.createWriteStream(path.join(dest, filename));
-                  console.log(out.writableLength);
                   stream.data.pipe(out);
                } catch (e) {
-                  cb(e);
+                  console.error('Something went wrong');
+                  process.exit()
                }
             }
          );
+      });
+   }
+
+   writeTo(output, cb) {
+      fs.writeFileSync(output, null);
+      const stream = fs.createWriteStream(output, { flags: 'a+' });
+      this.on('loaded', (dataLength, length, ep) => {
+         const url = ep.src;
+         stream.cork();
+         stream.write(`${url}\n`);
+         process.nextTick(() => stream.uncork());
+         if (dataLength === length) {}
       });
    }
 }
