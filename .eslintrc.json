@@ -14,6 +14,8 @@
         "no-console": "off",
         "no-undef": "off",
         "no-undefined": "off",
-        "no-unused-vars": "off"
+        "no-unused-vars": "off",
+        "indent": "off",
+        "no-unused-expressions": "off"
     }
 }
