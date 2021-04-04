@@ -1,10 +1,11 @@
-import cheerio from 'cheerio';
+import _ from 'lodash';
+import async from 'async';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
-import { EventEmitter } from 'events';
-import async from 'async';
-import path from 'path';
+import cheerio from 'cheerio';
 import fs from 'fs';
+import path from 'path';
+import { EventEmitter } from 'events';
 
 const url = 'https://gogo-stream.com';
 const instance = axios.create({
@@ -14,33 +15,33 @@ const instance = axios.create({
 axiosRetry(instance, { retries: 5 });
 
 export class Vidstreaming extends EventEmitter {
-   constructor(search, res) {
+   constructor(search, res, filter) {
       super({ captureRejections: true });
       this.search = search;
       this.res = res;
-      this.data = [];
+      this.filter = filter;
+      this.data = _.chain([]);
       this.episodes();
    }
 
    async episodes() {
       try {
-         process.stdout.write('Search started');
          const anime = await instance.get('/ajax-search.html', {
             params: {
                keyword: this.search,
             },
          });
          if (anime.data.content === '' || !anime.data.content) {
-            process.stdout.clearLine()
+            process.stdout.clearLine();
             process.stdout.write('No anime found');
-            process.exit()
+            process.exit();
          }
          const $ = cheerio.load(anime.data.content);
          const link = $('ul a')[0].attribs.href;
          await this.getList(link);
       } catch (e) {
-         console.error('Something went wrong');
-         process.exit()
+         console.error('Something went wrong - 43');
+         process.exit();
       }
    }
 
@@ -49,12 +50,18 @@ export class Vidstreaming extends EventEmitter {
          const { data } = await instance.get(link);
          const $ = cheerio.load(data);
          const list = $('.listing.items.lists .video-block a');
-         const href = [];
+         const epilist = _.chain(this.filter.episodes);
+         const href = _.chain([]);
          list.each((i, e) => href.push(e.attribs.href));
-         this.epNum = href.length;
-         async.each(
-            href.sort((a, b) => a.ep - b.ep),
-            async item => {
+         this.epNum = href.size();
+         href
+            .filter(
+               item =>
+                  epilist.includes(
+                     Number(path.basename(item.split('-').pop()))
+                  )
+            )
+            .each(async item => {
                try {
                   const { data } = await instance.get(item);
                   const $ = cheerio.load(data);
@@ -68,7 +75,7 @@ export class Vidstreaming extends EventEmitter {
                   const ext = path.extname(new URL(src).pathname);
                   const ep = Number(path.basename(item).split('-').pop());
                   this.data.push({ filename, ep, ext, id, title, src });
-                  this.emit('loaded', this.data.length, this.epNum, {
+                  this.emit('loaded', this.data.size(), this.epNum, {
                      filename,
                      ep,
                      ext,
@@ -77,14 +84,13 @@ export class Vidstreaming extends EventEmitter {
                      src,
                   });
                } catch (err) {
-                  console.error('Something went wrong');
-                  process.exit()
+                  console.error('Something went wrong - 92');
+                  process.exit();
                }
-            }
-         );
+            });
       } catch (e) {
-         console.error('Something went wrong');
-         process.exit()
+         console.error('Something went wrong - 98', e.message);
+         process.exit();
       }
    }
    async getEpisodes(id) {
@@ -113,40 +119,12 @@ export class Vidstreaming extends EventEmitter {
          }
          return vid;
       } catch (e) {
-         console.error(e);
+         console.error('Something went wrong - 128');
       }
    }
 
    download(format, dest) {
-      this.on('ready', async (err, episodes) => {
-         if (err) throw err;
-         async.each(
-            episodes.sort((a, b) => a.ep - b.ep),
-            async (data) => {
-               try {
-                  const stream = await axios.get(data.src, {
-                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                     responseType: 'stream',
-                  });
-                  let filename;
-                  if (format === 'title') {
-                     filename = data.title + data.ext;
-                  }
-                  if (format === 'raw') {
-                     filename = data.filename;
-                  }
-                  if (format === 'num') {
-                     filename = data.ep + data.ext;
-                  }
-                  const out = fs.createWriteStream(path.join(dest, filename));
-                  stream.data.pipe(out);
-               } catch (e) {
-                  console.error('Something went wrong');
-                  process.exit()
-               }
-            }
-         );
-      });
+      this.on('loaded')
    }
 
    writeTo(output, cb) {
@@ -157,7 +135,8 @@ export class Vidstreaming extends EventEmitter {
          stream.cork();
          stream.write(`${url}\n`);
          process.nextTick(() => stream.uncork());
-         if (dataLength === length) {}
+         if (dataLength === length) {
+         }
       });
    }
 }
