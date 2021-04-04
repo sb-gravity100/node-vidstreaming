@@ -10,20 +10,28 @@ Api for downloading or watching anime videos from [gogo-stream.com](1)/[vidstrea
 Run `vidstreaming --help` to see more options
 
 ```
-   vidstreaming <cmd>
-
-Commands:
-  vidstreaming search [name]  Search for anime
+Usage: vidstreaming -S <name> [...options]
 
 Options:
-      --version     Show version number                     [boolean]
+      --help        Show help                                                              [boolean]
 
-  -D, --download    Download Anime to specified directory
-  -O, --output      Output urls to txt file
-  -R, --resolution  Output resolution - 360, 480, 720, 1080
-                    If none defaults to original quality
+      --version     Show version number                                                    [boolean]
 
-      --help        Show help                               [boolean]
+  -S, --search      Anime to search for                                          [string] [required]
+
+  -D, --download    Download Anime to directory.
+                    (eg. "C:/Users/userXXX/Downloads")                                      [string]
+
+  -O, --output      Output urls to txt.
+                    (eg. "C:/Users/userXXX/Downloads/jujutsu.txt")                          [string]
+
+  -R, --resolution  Output resolution - 360, 480, 720, 1080.
+                    If none defaults to original quality.             [choices: 360, 480, 720, 1080]
+
+  -E, --episodes    Values separated by commas.                                              [array]
+
+  -A, --async       If true it will fetch the links one by one and print it.
+                    Otherwise it will get all the links first and print it.                [boolean]
 ```
 
 This will output the urls in a text file.  
