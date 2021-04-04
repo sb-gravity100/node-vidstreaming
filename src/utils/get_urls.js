@@ -11,9 +11,6 @@ export const getUrls = (name, output, res, filter) => {
   const stream = fs.createWriteStream(output, { flags: 'a+' });
   loading.message('Printing urls to file...');
 
-  // Url sorter
-  const sortUrls = () => {};
-
   // Handler to be invoked when loaded
   const doneHandler = item => {
     const url = item.src;
@@ -22,17 +19,27 @@ export const getUrls = (name, output, res, filter) => {
     process.nextTick(() => stream.uncork());
   };
   // Loaded listener
-  vid.on('loaded', (dataLength, length, item) => {
-    if (dataLength === length) {
-      doneHandler(item);
-      loading.stop();
-      console.log('Done');
-      sortUrls();
-      process.exit(0);
-    } else {
-      process.stdout.clearLine();
-      loading.message(`${dataLength} out of ${length} - Done`);
-      doneHandler(item);
-    }
+  if (filter.async) {
+    vid.on('loaded', (dataLength, length, item) => {
+      if (dataLength === length) {
+        doneHandler(item);
+        loading.stop();
+        console.log('Done');
+        process.exit(0);
+      } else {
+        process.stdout.clearLine();
+        loading.message(`${dataLength} out of ${length} - Done`);
+        doneHandler(item);
+      }
+    });
+  } else {
+    vid.episodes().then(data => data.forEach(d => doneHandler(d)));
+  }
+
+  // Error listener
+  vid.on('error', (err, line) => {
+    console.error('Something went wrong', line, '\n', err.message);
+    fs.unlinkSync(output);
+    process.exit(1);
   });
 };

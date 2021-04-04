@@ -18,8 +18,8 @@ export const middleware = (argv, callback) => {
       argv.episodes = _.uniq(newArgs);
    }
    if (argv.O === '') {
-      argv.O = `./${argv.S}.txt`
-      argv.output = `./${argv.S}.txt`;
+      argv.O = `./${argv.S.split(' ').join('_')}.txt`
+      argv.output = `./${argv.S.split(' ').join('_')}.txt`;
       console.log(argv.O)
    }
    if (argv.D === '') {

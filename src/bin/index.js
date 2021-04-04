@@ -1,11 +1,10 @@
 import boxen from 'boxen';
 import chalk from 'chalk';
 import yargs from 'yargs';
-import path from 'path'
+import path from 'path';
 import { getUrls } from '../utils/get_urls';
 import { printUrls } from '../utils/print_urls';
 import { middleware } from '../utils/middleware';
-
 
 const boxenOptions = {
   padding: 1,
@@ -47,6 +46,11 @@ const options = yargs
     describe: 'Values separated by commas.',
     array: true,
   })
+  .option('A', {
+    alias: 'async',
+    describe: 'If true it will fetch the links one by one and print it.\nOtherwise it will get all the links first and print it.',
+    boolean: true,
+  })
   .wrap(yargs.terminalWidth()).argv;
 
 if (options) {
@@ -60,22 +64,25 @@ if (options) {
               '\nOutput File   -   ' +
               chalk.yellow(path.basename(argv.O)) +
               '\nQuality       -   ' +
-              chalk.red(argv.R + 'p' || 'Original')
+              chalk.red(argv.R ? argv.R + 'p': 'Original')
           ),
           boxenOptions
         )
       );
-      getUrls(argv.search, argv.output, argv.resolution, argv.episodes);
+      getUrls(argv.search, argv.output, argv.resolution, {
+        episodes: argv.episodes,
+        async: argv.async,
+      });
     }
     if (!argv.O && argv.D) {
       console.log(
         boxen(
           'Term           -  ' +
-            argv.search +
+            chalk.greenBright(argv.search) +
             '\nDownload Path  -  ' +
-            argv.D +
+            chalk.yellow(path.basename(argv.D)) +
             '\nQuality        -  ' +
-            argv.R || 'Original',
+            chalk.red(argv.R ? argv.R + 'p': 'Original'),
           boxenOptions
         )
       );
@@ -90,11 +97,14 @@ if (options) {
           'Term         -  ' +
             chalk.greenBright(argv.search) +
             '\nQuality      -  ' +
-            chalk.red(argv.R + 'p' || 'Original'),
+            chalk.red(argv.R ? argv.R + 'p': 'Original'),
           boxenOptions
         )
       );
-      printUrls(argv.search, argv.resolution, argv.episodes);
+      printUrls(argv.search, argv.resolution, {
+        episodes: argv.episodes,
+        async: argv.async,
+      });
     }
   });
 }

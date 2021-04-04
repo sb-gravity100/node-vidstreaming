@@ -41,7 +41,7 @@ Output:
 
 ## Options
 
-- `-D`, `--download` - Download files in a specified path.
+- `-D`, `--download` - Download files in a specified path. (Downloading urls is not yet supported.)
   ```sh
   vidstreaming search "jujutsu kaisen" --download "/path/to/download/dir/Jujutsu_Kaisen"
   ```
@@ -57,22 +57,8 @@ Output:
   ```sh
   vidstreaming search "jujutsu kaisen" --episodes 1-10 17 21 -- [...options]
   ```
-
-_Note: If the `-D` and `-R` options are omitted then it will log the urls to the console.
+- `-A`, `--async` - If true then it will fetch the links one by one and print it. Otherwise it will get all the links first and print it
+  ```sh
+  vidstreaming search "jujutsu kaisen" --async
   ```
-  vidstreaming search "jujutsu kaisen" --download "/path/to/download/dir/Jujutsu_Kaisen"
-  ```
-- `-O`, `--output` - Output urls into a .txt file.
-  ```
-  vidstreaming search "jujutsu kaisen" --output "jujutsu.txt"
-  ```
-- `-R`, `--resolution` - Set the quality of the video. (eg. 360, 480...)
-  ```
-  vidstreaming search "jujutsu kaisen" --resolution 720
-  ```
-- `-E`, `--episodes` - Get only the episodes specified. (eg. "1-10", "1 2 4")
-  ```
-  vidstreaming search "jujutsu kaisen" --episodes 1-10 17 21 -- [...options]
-  ```
-
-_Note: If the `-D` and `-R` options are omitted then it will log the urls to the console.
+  Note: If the `-D` and `-R` options are omitted then it will log the urls to the console.
