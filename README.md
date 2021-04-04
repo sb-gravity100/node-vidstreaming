@@ -42,6 +42,23 @@ Output:
 ## Options
 
 - `-D`, `--download` - Download files in a specified path.
+  ```sh
+  vidstreaming search "jujutsu kaisen" --download "/path/to/download/dir/Jujutsu_Kaisen"
+  ```
+- `-O`, `--output` - Output urls into a .txt file.
+  ```sh
+  vidstreaming search "jujutsu kaisen" --output "jujutsu.txt"
+  ```
+- `-R`, `--resolution` - Set the quality of the video. (eg. 360, 480...)
+  ```sh
+  vidstreaming search "jujutsu kaisen" --resolution 720
+  ```
+- `-E`, `--episodes` - Get only the episodes specified. (eg. "1-10", "1 2 4")
+  ```sh
+  vidstreaming search "jujutsu kaisen" --episodes 1-10 17 21 -- [...options]
+  ```
+
+_Note: If the `-D` and `-R` options are omitted then it will log the urls to the console.
   ```
   vidstreaming search "jujutsu kaisen" --download "/path/to/download/dir/Jujutsu_Kaisen"
   ```
@@ -58,42 +75,4 @@ Output:
   vidstreaming search "jujutsu kaisen" --episodes 1-10 17 21 -- [...options]
   ```
 
-_Note: If the `-D` and `-R` options are omitted then it will log the urls to the console._
-
-
-### API
-
-The package contains this:
-```
-vidstreaming-api ( directories: 6, Files: 24 )          
- ├─ dist                                                     
- │ ├─ bin                                                    
- │ │ └─ index.js                                             
- │ ├─ utils                                                  
- │ │ ├─ download_urls.js                                     
- │ │ ├─ get_urls.js                                          
- │ │ ├─ loading.js                                           
- │ │ ├─ middleware.js                                        
- │ │ └─ print_urls.js                                        
- │ └─ vidstreaming.js                                        
- ├─ src                                                      
- │ ├─ bin                                                    
- │ │ └─ index.js                                             
- │ ├─ utils                                                  
- │ │ ├─ download_urls.js                                     
- │ │ ├─ get_urls.js                                          
- │ │ ├─ loading.js                                           
- │ │ ├─ middleware.js                                        
- │ │ └─ print_urls.js                                        
- │ └─ vidstreaming.js                                        
- ├─ .babelrc                                                 
- ├─ .eslintrc.json                                           
- ├─ .gitignore                                               
- ├─ dir-tree.txt                                             
- ├─ package.json                                             
- ├─ README.md                                                
- ├─ vidstreaming                                             
- ├─ vidstreaming.cmd                                         
- ├─ yarn-error.log                                           
- └─ yarn.lock                                                
-```
+_Note: If the `-D` and `-R` options are omitted then it will log the urls to the console.

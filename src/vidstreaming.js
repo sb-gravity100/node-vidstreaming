@@ -20,7 +20,7 @@ export class Vidstreaming extends EventEmitter {
       this.search = search;
       this.res = res;
       this.filter = filter;
-      this.data = [];
+      this.data = _.chain([]);
       this.episodes();
    }
 
@@ -50,49 +50,44 @@ export class Vidstreaming extends EventEmitter {
          const { data } = await instance.get(link);
          const $ = cheerio.load(data);
          const list = $('.listing.items.lists .video-block a');
-         const href = [];
-         list.each((i, e) => {
-            if (this.filter && this.filter.episodes) {
-               if (
-                  _.includes(
-                     this.filter.episodes,
-                     Number(path.basename(e.attribs.href).split('-').pop())
+         const epilist = _.chain(this.filter.episodes);
+         const href = _.chain([]);
+         list.each((i, e) => href.push(e.attribs.href));
+         this.epNum = href.size();
+         href
+            .filter(
+               item =>
+                  epilist.includes(
+                     Number(path.basename(item.split('-').pop()))
                   )
-               ) {
-                  href.push(e.attribs.href);
+            )
+            .each(async item => {
+               try {
+                  const { data } = await instance.get(item);
+                  const $ = cheerio.load(data);
+                  const url = new URL(
+                     'https:' + $('.play-video iframe')[0].attribs.src
+                  );
+                  const id = url.searchParams.get('id');
+                  const title = $('.video-info-left h1')[0].children[0].data;
+                  const src = await this.getEpisodes(id);
+                  const filename = path.basename(new URL(src).pathname);
+                  const ext = path.extname(new URL(src).pathname);
+                  const ep = Number(path.basename(item).split('-').pop());
+                  this.data.push({ filename, ep, ext, id, title, src });
+                  this.emit('loaded', this.data.size(), this.epNum, {
+                     filename,
+                     ep,
+                     ext,
+                     id,
+                     title,
+                     src,
+                  });
+               } catch (err) {
+                  console.error('Something went wrong - 92');
+                  process.exit();
                }
-            } else {
-               href.push(e.attribs.href);
-            }
-         });
-         this.epNum = href.length;
-         async.each(href, async item => {
-            try {
-               const { data } = await instance.get(item);
-               const $ = cheerio.load(data);
-               const url = new URL(
-                  'https:' + $('.play-video iframe')[0].attribs.src
-               );
-               const id = url.searchParams.get('id');
-               const title = $('.video-info-left h1')[0].children[0].data;
-               const src = await this.getEpisodes(id);
-               const filename = path.basename(new URL(src).pathname);
-               const ext = path.extname(new URL(src).pathname);
-               const ep = Number(path.basename(item).split('-').pop());
-               this.data.push({ filename, ep, ext, id, title, src });
-               this.emit('loaded', this.data.length, this.epNum, {
-                  filename,
-                  ep,
-                  ext,
-                  id,
-                  title,
-                  src,
-               });
-            } catch (err) {
-               console.error('Something went wrong - 92');
-               process.exit();
-            }
-         });
+            });
       } catch (e) {
          console.error('Something went wrong - 98', e.message);
          process.exit();
@@ -129,35 +124,7 @@ export class Vidstreaming extends EventEmitter {
    }
 
    download(format, dest) {
-      this.on('ready', async (err, episodes) => {
-         if (err) throw err;
-         async.each(
-            episodes.sort((a, b) => a.ep - b.ep),
-            async data => {
-               try {
-                  const stream = await axios.get(data.src, {
-                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                     responseType: 'stream',
-                  });
-                  let filename;
-                  if (format === 'title') {
-                     filename = data.title + data.ext;
-                  }
-                  if (format === 'raw') {
-                     filename = data.filename;
-                  }
-                  if (format === 'num') {
-                     filename = data.ep + data.ext;
-                  }
-                  const out = fs.createWriteStream(path.join(dest, filename));
-                  stream.data.pipe(out);
-               } catch (e) {
-                  console.error('Something went wrong 156');
-                  process.exit();
-               }
-            }
-         );
-      });
+      this.on('loaded')
    }
 
    writeTo(output, cb) {

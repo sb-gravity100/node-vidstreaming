@@ -19,7 +19,8 @@
     "downloader",
     "vidstreaming",
     "gogostream",
-    "anime-downloader"
+    "anime-downloader",
+    "cli"
   ],
   "author": "SB",
   "license": "ISC",
