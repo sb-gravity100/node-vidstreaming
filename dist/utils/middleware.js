@@ -7,31 +7,29 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.middleware = void 0;
 
-var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
-
 var _lodash = _interopRequireDefault(require("lodash"));
 
-var middleware = function middleware(argv, callback) {
+const middleware = (argv, callback) => {
   if (argv.E) {
-    var newArgs = [];
-    argv.E.forEach(function (arg) {
+    const newArgs = [];
+    argv.E.forEach(arg => {
       if (arg.toString().indexOf('-') > -1) {
-        var rangeArr = arg.split('-');
+        const rangeArr = arg.split('-');
 
-        var newRange = _lodash["default"].range(Number(rangeArr[0]), Number(rangeArr[1]) + 1);
+        const newRange = _lodash.default.range(Number(rangeArr[0]), Number(rangeArr[1]) + 1);
 
-        return newArgs.push.apply(newArgs, (0, _toConsumableArray2["default"])(newRange));
+        return newArgs.push(...newRange);
       }
 
       return newArgs.push(arg);
     });
-    argv.E = _lodash["default"].uniq(newArgs);
-    argv.episodes = _lodash["default"].uniq(newArgs);
+    argv.E = _lodash.default.uniq(newArgs);
+    argv.episodes = _lodash.default.uniq(newArgs);
   }
 
   if (argv.O === '') {
-    argv.O = "./".concat(argv.S.split(' ').join('_'), ".txt");
-    argv.output = "./".concat(argv.S.split(' ').join('_'), ".txt");
+    argv.O = `./${argv.S.split(' ').join('_')}.txt`;
+    argv.output = `./${argv.S.split(' ').join('_')}.txt`;
     console.log(argv.O);
   }
 

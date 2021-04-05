@@ -65,8 +65,9 @@ Output:
   ```sh
   vidstreaming search "jujutsu kaisen" --episodes 1-10 17 21 -- [...options]
   ```
-- `-A`, `--async` - If true then it will fetch the links one by one and print it. Otherwise it will get all the links first and print it
+- `-A`, `--async` - If true then it will fetch the links one by one and print it. Otherwise it will get all the links first and print it.
   ```sh
   vidstreaming search "jujutsu kaisen" --async
   ```
-  Note: If the `-D` and `-R` options are omitted then it will log the urls to the console.
+  _Note: If the `-D` and `-R` options are omitted then it will log the urls to the console._
+  _Note: Urls order are not guaranteed in async mode._

@@ -13,57 +13,51 @@ var _loading = _interopRequireDefault(require("./loading"));
 
 var _vidstreaming = require("../vidstreaming");
 
-var getUrls = function getUrls(name, output, res, filter) {
-  var vid = new _vidstreaming.Vidstreaming(name, res, filter);
+const getUrls = (name, output, res, filter) => {
+  const vid = new _vidstreaming.Vidstreaming(name, res, filter);
 
-  _fs["default"].writeFileSync(output, null);
+  _fs.default.writeFileSync(output, null);
 
-  _loading["default"].start();
+  _loading.default.start();
 
-  var stream = _fs["default"].createWriteStream(output, {
+  const stream = _fs.default.createWriteStream(output, {
     flags: 'a+'
   });
 
-  _loading["default"].message('Printing urls to file...');
+  _loading.default.message('Printing urls to file...');
 
-  var doneHandler = function doneHandler(item) {
-    var url = item.src;
+  const doneHandler = item => {
+    const url = item.src;
     stream.cork();
-    stream.write("".concat(url, "\n"));
-    process.nextTick(function () {
-      return stream.uncork();
-    });
+    stream.write(`${url}\n`);
+    process.nextTick(() => stream.uncork());
   };
 
   if (filter.async) {
-    vid.on('loaded', function (dataLength, length, item) {
+    vid.on('loaded', (dataLength, length, item) => {
       if (dataLength === length) {
         doneHandler(item);
 
-        _loading["default"].stop();
+        _loading.default.stop();
 
         console.log('Done');
         process.exit(0);
       } else {
         process.stdout.clearLine();
 
-        _loading["default"].message("".concat(dataLength, " out of ").concat(length, " - Done"));
+        _loading.default.message(`${dataLength} out of ${length} - Done`);
 
         doneHandler(item);
       }
     });
   } else {
-    vid.episodes().then(function (data) {
-      return data.forEach(function (d) {
-        return doneHandler(d);
-      });
-    });
+    vid.episodes().then(data => data.forEach(d => doneHandler(d)));
   }
 
-  vid.on('error', function (err, line) {
+  vid.on('error', (err, line) => {
     console.error('Something went wrong', line, '\n', err.message);
 
-    _fs["default"].unlinkSync(output);
+    _fs.default.unlinkSync(output);
 
     process.exit(1);
   });

@@ -1,10 +1,10 @@
-import _ from 'lodash';
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
+import { Aigle } from 'aigle';
 
 const url = 'https://gogo-stream.com';
 const instance = axios.create({
@@ -13,47 +13,22 @@ const instance = axios.create({
 });
 axiosRetry(instance, { retries: 5 });
 
-export class Vidstreaming extends EventEmitter {
+class Vidstreaming extends EventEmitter {
    constructor(search, res, filter) {
-      super({ captureRejections: true });
+      super();
       this.search = search;
       this.res = res;
       this.filter = filter;
-      this.data = _.chain([]);
-      // if filter.async option is true then you don't need to call the episode fetcher...
-      if (this.filter.async) {
-         console.log('  So you have chosen async');
-         this.episodes();
-      }
+      this.data = [];
+      this.searchlist = [];
    }
 
-   async search(term, cb) {
+   async term(term, cb) {
+      let result;
       try {
          const anime = await instance.get('/ajax-search.html', {
             params: {
                keyword: term,
-            },
-         });
-         const $ = cheerio.load(anime.data.content);
-         const searchlist = [];
-         $('ul a').each((i, e) =>
-            searchlist.push({
-               title: e.firstChild.data,
-               link: e.attribs.href,
-            })
-         );
-         cb(null, searchlist);
-         return searchlist;
-      } catch (e) {
-         cb(e, null);
-      }
-   }
-
-   async episodes(cb) {
-      try {
-         const anime = await instance.get('/ajax-search.html', {
-            params: {
-               keyword: this.search,
             },
          });
          if (anime.data.content === '' || !anime.data.content) {
@@ -62,101 +37,142 @@ export class Vidstreaming extends EventEmitter {
             process.exit();
          }
          const $ = cheerio.load(anime.data.content);
-         const link = $('ul a')[0].attribs.href;
-         const epData = await this.getList(link);
-         this.emit('ready', epData);
-         console.log('list taken');
-         if (cb) {
-            cb(null, epData);
-         }
-      } catch (e) {
-         this.emit('error', e, 72);
-         if (cb) {
-            cb(null, epData);
-         }
+         $('ul a').each((i, e) =>
+            this.searchlist.push({
+               title: e.firstChild.data,
+               link: e.attribs.href,
+            })
+         );
+         result = this.searchlist;
+         return result;
+      } catch (err) {
+         this.emit('error', err, 'Term');
+      } finally {
+         if (cb) cb(result);
       }
    }
 
-   async getList(link) {
+   async episodes(a, cb) {
+      let result;
+      try {
+         let epData;
+         if (!a) {
+            const anime = await instance.get('/ajax-search.html', {
+               params: {
+                  keyword: this.search,
+               },
+            });
+            if (anime.data.content === '' || !anime.data.content) {
+               process.stdout.clearLine();
+               process.stdout.write('No anime found');
+               process.exit();
+            }
+            const $ = cheerio.load(anime.data.content);
+            const link = $('ul a')[0].attribs.href;
+            epData = await this.getList(link);
+         } else {
+            epData = await this.getList(a);
+         }
+         this.emit('ready', epData);
+         result = epData;
+         return epData
+      } catch (e) {
+         this.emit('error', e, 'episodes');
+      } finally {
+         if (cb) cb(result);
+      }
+   }
+
+   async getList(link, cb) {
+      let results, newHref;
       try {
          const { data } = await instance.get(link);
          const $ = cheerio.load(data);
          const list = $('.listing.items.lists .video-block a');
-         const epilist = _.chain(this.filter.episodes);
-         const href = _.chain([]);
+         const href = [];
          list.each((i, e) => href.push(e.attribs.href));
-         console.log('pushed');
-         this.epNum = href.size();
-         const asyncGetEpisodes = async item => {
-            try {
-               console.log('yojooo');
-               const { data } = await instance.get(item);
-               const $ = cheerio.load(data);
-               const url = new URL(
-                  'https:' + $('.play-video iframe')[0].attribs.src
-               );
-               const id = url.searchParams.get('id');
-               const title = $('.video-info-left h1')[0].children[0].data;
-               const src = await this.getEpisodes(id);
-               const filename = path.basename(new URL(src).pathname);
-               const ext = path.extname(new URL(src).pathname);
-               const ep = Number(path.basename(item).split('-').pop());
-               this.data.push({ filename, ep, ext, id, title, src });
-               this.emit('loaded', this.data.size(), this.epNum, {
-                  filename,
-                  ep,
-                  ext,
-                  id,
-                  title,
-                  src,
-               });
-            } catch (err) {
-               // console.error('Something went wrong - 102\n', e.message);
-               this.emit('error', e, 102);
-            }
+         this.epNum = href.length;
+         const asynciterator = async item => {
+            const { data } = await instance.get(item);
+            const $ = cheerio.load(data);
+            const url = new URL(
+               'https:' + $('.play-video iframe')[0].attribs.src
+            );
+            const id = url.searchParams.get('id');
+            const title = $('.video-info-left h1')[0].children[0].data;
+            const src = await this.getEpisodes(id);
+            const srcUrl = new URL(src).pathname;
+            const filename = path.basename(srcUrl);
+            const ext = path.extname(srcUrl);
+            const ep = Number(path.basename(item).split('-').pop());
+            const animeData = {
+               filename,
+               ep,
+               ext,
+               id,
+               title,
+               src,
+            };
+            this.data.push(animeData.id);
+            this.filter &&
+               this.filter.async &&
+               this.emit('loaded', this.data.length, this.epNum, animeData);
+            return animeData;
          };
-         if (this.filter.episodes) {
-            const newHref = href.filter(item => {
-               epilist.includes(Number(path.basename(item.split('-').pop())));
-               console.log('filtered');
-            });
-            newHref
-               .sortBy(i => Number(path.basename(i.split('-').pop())))
-               .value()
-               .forEach(i => asyncGetEpisodes(i));
+         if (this.filter) {
+            if (this.filter.episodes) {
+               const epilist = this.filter.episodes;
+               newHref = await Aigle.resolve(href)
+                  .filter(ref => epilist.includes(Number(ref.split('-').pop())))
+                  .map(asynciterator)
+                  .sortBy('ep');
+            }
          } else {
             console.log('Not filtered');
-            href
-               .sortBy(i => Number(path.basename(i.split('-').pop())))
-               .value()
-               .forEach(i => asyncGetEpisodes(i));
+            newHref = await Aigle.resolve(href).map(asynciterator).sortBy('ep');
          }
-      } catch (e) {
+         return newHref;
+      } catch (err) {
          // console.error('Something went wrong - 98\n', err.message);
-         this.emit('error', e, 106);
+         this.emit('error', err, 'getList');
+      } finally {
+         results = newHref;
+         if (cb) cb(results);
       }
    }
-   async getEpisodes(id) {
+   async getEpisodes(id, cb) {
+      let results;
       try {
-         const res = this.res;
-         const { data } = await instance.get('/download', {
-            params: {
-               id,
-            },
-         });
-         const $ = cheerio.load(data);
-         const resList = _.chain([]);
-         $('.mirror_link .dowload a').each((i, e) =>
-            resList.push(e.attribs.href)
-         );
-         return resList.filter(i => i.search(res || /HDP/g) > -1).head();
-      } catch (e) {
+         if (this.res) {
+            const res = this.res;
+            const { data } = await instance.get('/download', {
+               params: {
+                  id,
+               },
+            });
+            const resList = [];
+            $('.mirror_link .dowload a').each((i, e) =>
+               resList.push(e.attribs.href)
+            );
+            results = resList.filter(i => i.toString().search(res) > -1)[0];
+         } else {
+            const anime = await instance.get('/ajax.php', {
+               params: {
+                  id,
+               }
+            });
+            results = anime.data.source.shift().file
+         }
+         return results;
+      } catch (err) {
          // console.error('Something went wrong - 128\n', e.message);
-         this.emit('error', e, 128);
+         this.emit('error', err, 'getEpisodes');
+      } finally {
+         if (cb) cb(results);
       }
    }
 
-   download(format, dest) {
+   /* download(format, dest) {
       // this.on('loaded');
    }
 
@@ -191,5 +207,7 @@ export class Vidstreaming extends EventEmitter {
          fs.unlinkSync(output);
          process.exit(1);
       });
-   }
+   } */
 }
+
+export default Vidstreaming;

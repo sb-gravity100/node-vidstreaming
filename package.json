@@ -1,14 +1,14 @@
 {
-  "name": "vidstreaming-anime-downloader",
+  "name": "@sbgv-100/vidstreaming-anime-downloader",
   "version": "1.3.0",
   "description": "Api for downloading or watching anime videos from gogo-stream.com/vidstreaming.io",
   "main": "dist/vidstreaming.js",
   "scripts": {
-    "start": "nodemon src/index.js",
+    "test": "jest",
     "transpile": "babel ./src --out-dir ./dist --no-comments",
     "clean": "rimraf ./dist",
     "build": "npm-run-all clean transpile",
-    "watch": "babel ./src --out-dir ./dist --no-comments -w"
+    "watch": "npm run clean & babel ./src --out-dir ./dist --no-comments -w"
   },
   "repository": {
     "type": "git",
@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/sb-gravity100/vidstreaming-api-test#readme",
   "dependencies": {
+    "aigle": "^1.14.1",
     "async": "^3.2.0",
     "axios": "^0.21.1",
     "axios-retry": "^3.1.9",
@@ -36,6 +37,8 @@
     "chalk": "^4.1.0",
     "cheerio": "^1.0.0-rc.5",
     "clui": "^0.3.6",
+    "inquirer": "^8.0.0",
+    "inquirer-autocomplete-prompt": "^1.3.0",
     "lodash": "^4.17.21",
     "yargs": "^16.2.0"
   },
@@ -50,16 +53,20 @@
     "eslint": "^7.23.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "2.22.1",
+    "jest": "^26.6.3",
     "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.2"
   },
   "nodemonConfig": {
     "execMap": {
-      "js": "babel-node --harmony --trace-warnings"
+      "js": "node --harmony --trace-warnings --trace-uncaught --trace-deprecation"
     },
     "ignore": [
       "dist/"
+    ],
+    "watch": [
+      "src/"
     ]
   },
   "bin": {
