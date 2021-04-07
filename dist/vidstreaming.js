@@ -35,7 +35,10 @@ const instance = _axios.default.create({
 });
 
 class Vidstreaming extends _events.EventEmitter {
-  constructor(search, res, filter) {
+  constructor(search, res, filter = {
+    episodes: null,
+    async: false
+  }) {
     super();
     this.search = search;
     this.res = res;
@@ -55,21 +58,24 @@ class Vidstreaming extends _events.EventEmitter {
       });
 
       if (anime.data.content === '' || !anime.data.content) {
-        process.stdout.clearLine();
-        process.stdout.write('No anime found');
-        process.exit();
+        throw {
+          message: 'No anime data found',
+          code: 'ANINOTFOUND',
+          name: 'Error'
+        };
       }
 
       const $ = _cheerio.default.load(anime.data.content);
 
-      $('ul a').each((i, e) => this.searchlist.push({
+      $('ul a').each((_i, e) => this.searchlist.push({
         title: e.firstChild.data,
-        link: e.attribs.href
+        link: e.attribs.href,
+        eps: e.attribs.href.split('-').pop()
       }));
       result = this.searchlist;
       return result;
     } catch (err) {
-      this.emit('error', err, 'Term');
+      this.emit('error', err, 'error1');
     } finally {
       if (cb) cb(result);
     }
@@ -89,9 +95,11 @@ class Vidstreaming extends _events.EventEmitter {
         });
 
         if (anime.data.content === '' || !anime.data.content) {
-          process.stdout.clearLine();
-          process.stdout.write('No anime found');
-          process.exit();
+          throw {
+            message: 'No anime data found',
+            code: 'ANINOTFOUND',
+            name: 'Error'
+          };
         }
 
         const $ = _cheerio.default.load(anime.data.content);
@@ -106,7 +114,7 @@ class Vidstreaming extends _events.EventEmitter {
       result = epData;
       return epData;
     } catch (e) {
-      this.emit('error', e, 'episodes');
+      this.emit('error', e, 'error2');
     } finally {
       if (cb) cb(result);
     }
@@ -124,7 +132,7 @@ class Vidstreaming extends _events.EventEmitter {
 
       const list = $('.listing.items.lists .video-block a');
       const href = [];
-      list.each((i, e) => href.push(e.attribs.href));
+      list.each((_i, e) => href.push(e.attribs.href));
       this.epNum = href.length;
 
       const asynciterator = async item => {
@@ -164,13 +172,12 @@ class Vidstreaming extends _events.EventEmitter {
           newHref = await _aigle.Aigle.resolve(href).filter(ref => epilist.includes(Number(ref.split('-').pop()))).map(asynciterator).sortBy('ep');
         }
       } else {
-        console.log('Not filtered');
         newHref = await _aigle.Aigle.resolve(href).map(asynciterator).sortBy('ep');
       }
 
       return newHref;
     } catch (err) {
-      this.emit('error', err, 'getList');
+      this.emit('error', err, 'error3');
     } finally {
       results = newHref;
       if (cb) cb(results);
@@ -191,6 +198,9 @@ class Vidstreaming extends _events.EventEmitter {
           }
         });
         const resList = [];
+
+        const $ = _cheerio.default.load(data);
+
         $('.mirror_link .dowload a').each((i, e) => resList.push(e.attribs.href));
         results = resList.filter(i => i.toString().search(res) > -1)[0];
       } else {

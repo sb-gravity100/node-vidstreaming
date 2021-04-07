@@ -26,6 +26,14 @@ const getUrls = (name, output, res, filter) => {
 
   _loading.default.message('Printing urls to file...');
 
+  vid.on('error', err => {
+    console.error(err.code + ':', err.message);
+
+    _fs.default.unlinkSync(output);
+
+    process.exit(1);
+  });
+
   const doneHandler = item => {
     const url = item.src;
     stream.cork();
@@ -33,33 +41,27 @@ const getUrls = (name, output, res, filter) => {
     process.nextTick(() => stream.uncork());
   };
 
-  if (filter.async) {
-    vid.on('loaded', (dataLength, length, item) => {
-      if (dataLength === length) {
-        doneHandler(item);
+  vid.episodes(false, data => {
+    if (filter.async) {
+      vid.on('loaded', (dataLength, length, item) => {
+        if (dataLength === length) {
+          doneHandler(item);
 
-        _loading.default.stop();
+          _loading.default.stop();
 
-        console.log('Done');
-        process.exit(0);
-      } else {
-        process.stdout.clearLine();
+          console.log('Done');
+          process.exit(0);
+        } else {
+          process.stdout.clearLine();
 
-        _loading.default.message(`${dataLength} out of ${length} - Done`);
+          _loading.default.message(`${dataLength} out of ${length} - Done`);
 
-        doneHandler(item);
-      }
-    });
-  } else {
-    vid.episodes().then(data => data.forEach(d => doneHandler(d)));
-  }
-
-  vid.on('error', (err, line) => {
-    console.error('Something went wrong', line, '\n', err.message);
-
-    _fs.default.unlinkSync(output);
-
-    process.exit(1);
+          doneHandler(item);
+        }
+      });
+    } else {
+      data.forEach(d => doneHandler(d));
+    }
   });
 };
 

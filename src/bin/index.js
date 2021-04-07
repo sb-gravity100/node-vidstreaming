@@ -1,110 +1,117 @@
-import boxen from 'boxen';
-import chalk from 'chalk';
-import yargs from 'yargs';
-import path from 'path';
+import inquirer from 'inquirer';
+import _ from 'lodash'
+import { options } from '../utils/args';
 import { getUrls } from '../utils/get_urls';
 import { printUrls } from '../utils/print_urls';
+import { searchUrls } from '../utils/search_url';
+import chalk from 'chalk';
 import { middleware } from '../utils/middleware';
+import {
+  boxxx,
+  downloadModeBox,
+  outputModeBox,
+  printModeBox,
+} from '../utils/boxes';
 
-const boxenOptions = {
-  padding: 1,
-  borderColor: 'cyan',
-  dimBorder: true,
+inquirer.registerPrompt('search-list', require('inquirer-search-list'));
+
+const callSearch = title =>
+  searchUrls(title).then(list =>
+    inquirer
+      .prompt([
+        {
+          type: 'search-list',
+          name: 'anime',
+          message: 'Search results:',
+          choices: list.map(a => ({ name: a.title, value: a })),
+          default: 1,
+        },
+        {
+          type: 'input',
+          name: 'download',
+          message: 'Download path:',
+          default: false,
+          when: !options.D && !options.O,
+          transformer: input => {
+            if (!input || input === '') {
+              return false;
+            }
+            options.D = input;
+            options.download = input;
+            return input;
+          },
+        },
+        {
+          type: 'input',
+          name: 'output',
+          message: 'Output file:',
+          default: false,
+          when: !options.D && !options.O,
+          validate: input => {
+            if (input && input.search(/\.txt$/i) === -1) {
+              return `File must be a text - (.txt) file.`;
+            }
+            return true;
+          },
+          transformer: input => {
+            if (!input || input === '') {
+              return false;
+            }
+            options.O = input;
+            options.output = input;
+            return input;
+          },
+
+        }
+      ])
+      .then(answers => {
+        if (options.download && options.output) {
+          throw new Error(
+            'You either choose to output urls to txt or download them'
+          );
+        }
+        console.log(options);
+        options.anime = answers.anime;
+        middleware(options, argsHandler);
+      })
+      .catch(e => console.error(chalk.yellow.dim(e.message || 'Something went wrong.')))
+  );
+
+const argsHandler = argv => {
+  // Output urls to file
+  if (argv.O) {
+    console.log(boxxx(outputModeBox, argv));
+    getUrls(argv.anime, argv.output, argv.resolution, {
+      episodes: argv.episodes,
+      async: argv.async,
+    });
+  }
+  // Download URls
+  if (argv.D) {
+    console.log(boxxx(downloadModeBox, argv));
+    // downloadUrls(argv.search, argv.D, argv.R);
+  }
+
+  // Copy urls to clipboard. Note: Async mode doesn't work here...
+  if (!argv.O && !argv.D) {
+    console.log(boxxx(printModeBox, argv));
+    printUrls(argv.anime, argv.resolution, {
+      episodes: argv.episodes,
+      async: argv.async,
+    });
+  }
 };
 
-// CLI Arguments
-const options = yargs
-  .scriptName('vidstreaming')
-  .usage('Usage: $0 -S <name> [...options]')
-  .option('S', {
-    alias: 'search',
-    describe: 'Anime to search for',
-    type: 'string',
-    demandOption: true,
-  })
-  .option('D', {
-    alias: 'download',
-
-    describe:
-      'Download Anime to directory.\n(eg. "C:/Users/userXXX/Downloads")',
-    type: 'string',
-  })
-  .option('O', {
-    alias: 'output',
-    describe:
-      'Output urls to txt.\n(eg. "C:/Users/userXXX/Downloads/jujutsu.txt")',
-    type: 'string',
-  })
-  .option('R', {
-    alias: 'resolution',
-    describe:
-      'Output resolution - 360, 480, 720, 1080.\nIf none defaults to original quality.',
-    choices: [360, 480, 720, 1080],
-  })
-  .option('E', {
-    alias: 'episodes',
-    describe: 'Values separated by commas.',
-    array: true,
-  })
-  .option('A', {
-    alias: 'async',
-    describe: 'If true it will fetch the links one by one and print it.\nOtherwise it will get all the links first and print it.',
-    boolean: true,
-  })
-  .wrap(yargs.terminalWidth()).argv;
-
-if (options) {
-  middleware(options, argv => {
-    if (argv.O && !argv.D) {
-      console.log(
-        boxen(
-          chalk.white(
-            'Term          -   ' +
-              chalk.greenBright(argv.search) +
-              '\nOutput File   -   ' +
-              chalk.yellow(path.basename(argv.O)) +
-              '\nQuality       -   ' +
-              chalk.red(argv.R ? argv.R + 'p': 'Original')
-          ),
-          boxenOptions
-        )
-      );
-      getUrls(argv.search, argv.output, argv.resolution, {
-        episodes: argv.episodes,
-        async: argv.async,
-      });
-    }
-    if (!argv.O && argv.D) {
-      console.log(
-        boxen(
-          'Term           -  ' +
-            chalk.greenBright(argv.search) +
-            '\nDownload Path  -  ' +
-            chalk.yellow(path.basename(argv.D)) +
-            '\nQuality        -  ' +
-            chalk.red(argv.R ? argv.R + 'p': 'Original'),
-          boxenOptions
-        )
-      );
-      // downloadUrls(argv.search, argv.D, argv.R);
-    }
-    if (argv.O && argv.D) {
-      console.error('You either choose to output urls to txt or download them');
-    }
-    if (!argv.O && !argv.D) {
-      console.log(
-        boxen(
-          'Term         -  ' +
-            chalk.greenBright(argv.search) +
-            '\nQuality      -  ' +
-            chalk.red(argv.R ? argv.R + 'p': 'Original'),
-          boxenOptions
-        )
-      );
-      printUrls(argv.search, argv.resolution, {
-        episodes: argv.episodes,
-        async: argv.async,
-      });
-    }
-  });
+if (options.S) {
+  callSearch(options.search);
+}
+if (!options.S || options.S === '') {
+  inquirer
+    .prompt([
+      {
+        name: 'search',
+        message: 'Search Anime |',
+      },
+    ])
+    .then(answers => callSearch(answers.search));
 }

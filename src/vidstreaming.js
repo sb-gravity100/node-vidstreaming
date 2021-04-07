@@ -14,7 +14,7 @@ const instance = axios.create({
 axiosRetry(instance, { retries: 5 });
 
 class Vidstreaming extends EventEmitter {
-   constructor(search, res, filter) {
+   constructor(search, res, filter = { episodes: null, async: false }) {
       super();
       this.search = search;
       this.res = res;
@@ -32,21 +32,24 @@ class Vidstreaming extends EventEmitter {
             },
          });
          if (anime.data.content === '' || !anime.data.content) {
-            process.stdout.clearLine();
-            process.stdout.write('No anime found');
-            process.exit();
+            throw {
+               message: 'No anime data found',
+               code: 'ANINOTFOUND',
+               name: 'Error',
+            };
          }
          const $ = cheerio.load(anime.data.content);
-         $('ul a').each((i, e) =>
+         $('ul a').each((_i, e) =>
             this.searchlist.push({
                title: e.firstChild.data,
                link: e.attribs.href,
+               eps: e.attribs.href.split('-').pop()
             })
          );
          result = this.searchlist;
          return result;
       } catch (err) {
-         this.emit('error', err, 'Term');
+         this.emit('error', err, 'error1');
       } finally {
          if (cb) cb(result);
       }
@@ -63,9 +66,11 @@ class Vidstreaming extends EventEmitter {
                },
             });
             if (anime.data.content === '' || !anime.data.content) {
-               process.stdout.clearLine();
-               process.stdout.write('No anime found');
-               process.exit();
+               throw {
+                  message: 'No anime data found',
+                  code: 'ANINOTFOUND',
+                  name: 'Error',
+               };
             }
             const $ = cheerio.load(anime.data.content);
             const link = $('ul a')[0].attribs.href;
@@ -75,9 +80,9 @@ class Vidstreaming extends EventEmitter {
          }
          this.emit('ready', epData);
          result = epData;
-         return epData
+         return epData;
       } catch (e) {
-         this.emit('error', e, 'episodes');
+         this.emit('error', e, 'error2');
       } finally {
          if (cb) cb(result);
       }
@@ -90,7 +95,7 @@ class Vidstreaming extends EventEmitter {
          const $ = cheerio.load(data);
          const list = $('.listing.items.lists .video-block a');
          const href = [];
-         list.each((i, e) => href.push(e.attribs.href));
+         list.each((_i, e) => href.push(e.attribs.href));
          this.epNum = href.length;
          const asynciterator = async item => {
             const { data } = await instance.get(item);
@@ -128,13 +133,12 @@ class Vidstreaming extends EventEmitter {
                   .sortBy('ep');
             }
          } else {
-            console.log('Not filtered');
             newHref = await Aigle.resolve(href).map(asynciterator).sortBy('ep');
          }
          return newHref;
       } catch (err) {
          // console.error('Something went wrong - 98\n', err.message);
-         this.emit('error', err, 'getList');
+         this.emit('error', err, 'error3');
       } finally {
          results = newHref;
          if (cb) cb(results);
@@ -151,6 +155,7 @@ class Vidstreaming extends EventEmitter {
                },
             });
             const resList = [];
+            const $ = cheerio.load(data);
             $('.mirror_link .dowload a').each((i, e) =>
                resList.push(e.attribs.href)
             );
@@ -159,9 +164,9 @@ class Vidstreaming extends EventEmitter {
             const anime = await instance.get('/ajax.php', {
                params: {
                   id,
-               }
+               },
             });
-            results = anime.data.source.shift().file
+            results = anime.data.source.shift().file;
          }
          return results;
       } catch (err) {
