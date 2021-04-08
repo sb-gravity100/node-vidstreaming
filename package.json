@@ -6,8 +6,9 @@
   "scripts": {
     "test": "jest",
     "transpile": "babel ./src --out-dir ./dist --no-comments",
+    "compile": "tsc ./src/vidstreaming.ts --outDir ./dist -d --allowJs -t ES5 -m commonjs",
     "clean": "rimraf ./dist",
-    "build": "npm-run-all clean transpile",
+    "build": "npm-run-all clean transpile compile",
     "watch": "npm run clean & babel ./src --out-dir ./dist --no-comments -w"
   },
   "repository": {

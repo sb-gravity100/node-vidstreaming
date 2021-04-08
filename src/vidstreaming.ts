@@ -1,8 +1,8 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
-import cheerio from 'cheerio';
-import fs from 'fs';
-import path from 'path';
+import * as cheerio from 'cheerio';
+// import * as fs from 'fs';
+import * as path from 'path';
 import { EventEmitter } from 'events';
 import { Aigle } from 'aigle';
 
@@ -13,18 +13,74 @@ const instance = axios.create({
 });
 axiosRetry(instance, { retries: 5 });
 
-class Vidstreaming extends EventEmitter {
-   constructor(search, res, filter = { episodes: null, async: false }) {
+interface FilterInterface {
+   episodes?: number[];
+   async?: boolean;
+}
+
+interface SearchListItem {
+   title: string;
+   link: string;
+   eps: number;
+}
+
+interface DataItem {
+   filename: string;
+   ep: number;
+   ext: string;
+   id: string | null;
+   title: string;
+   src: string;
+}
+
+interface VidstreamingInterface {
+   search?: string;
+   res?: string;
+   filter?: FilterInterface;
+   data: Array<DataItem>;
+   searchlist: Array<SearchListItem>;
+   epNum: number;
+   term(
+      term?: string,
+      cb?: (result: Array<SearchListItem>) => void
+   ): Promise<Array<SearchListItem>>;
+   episodes(
+      a?: string,
+      cb?: (result: Array<DataItem>) => void
+   ): Promise<Array<DataItem>>;
+   getList(
+      link: string,
+      cb?: (result: Array<DataItem>) => void
+   ): Promise<Array<DataItem>>;
+   getEpisodes(
+      id: string | null,
+      cb?: (result: string) => void
+   ): Promise<string>;
+}
+
+class Vidstreaming extends EventEmitter implements VidstreamingInterface {
+   search?: string;
+   res?: string;
+   filter?: FilterInterface;
+   data: Array<DataItem>;
+   searchlist: Array<SearchListItem>;
+   epNum: number;
+
+   constructor(search?: string, res?: string, filter?: FilterInterface) {
       super();
       this.search = search;
       this.res = res;
       this.filter = filter;
       this.data = [];
       this.searchlist = [];
+      this.epNum = 0;
    }
 
-   async term(term, cb) {
-      let result;
+   async term(
+      term?: string,
+      cb?: (result: Array<SearchListItem>) => void
+   ): Promise<Array<SearchListItem>> {
+      let result: any;
       try {
          const anime = await instance.get('/ajax-search.html', {
             params: {
@@ -39,26 +95,30 @@ class Vidstreaming extends EventEmitter {
             };
          }
          const $ = cheerio.load(anime.data.content);
-         $('ul a').each((_i, e) =>
+         $('ul a').each((i, e): number => {
             this.searchlist.push({
                title: e.firstChild.data,
                link: e.attribs.href,
-               eps: e.attribs.href.split('-').pop()
-            })
-         );
+               eps: Number(e.attribs.href.split('-').pop()),
+            });
+            return i;
+         });
          result = this.searchlist;
-         return result;
       } catch (err) {
          this.emit('error', err, 'error1');
       } finally {
          if (cb) cb(result);
+         return result;
       }
    }
 
-   async episodes(a, cb) {
+   async episodes(
+      a?: string,
+      cb?: (result: Array<DataItem>) => void
+   ): Promise<Array<DataItem>> {
       let result;
       try {
-         let epData;
+         let epData: any;
          if (!a) {
             const anime = await instance.get('/ajax-search.html', {
                params: {
@@ -80,24 +140,29 @@ class Vidstreaming extends EventEmitter {
          }
          this.emit('ready', epData);
          result = epData;
-         return epData;
       } catch (e) {
          this.emit('error', e, 'error2');
       } finally {
          if (cb) cb(result);
+         return result;
       }
    }
 
-   async getList(link, cb) {
-      let results, newHref;
+   async getList(
+      link: string,
+      cb?: (result: Array<DataItem>) => void
+   ): Promise<Array<DataItem>> {
+      let results, newHref: any;
       try {
          const { data } = await instance.get(link);
          const $ = cheerio.load(data);
          const list = $('.listing.items.lists .video-block a');
-         const href = [];
+         const href: string[] = [];
          list.each((_i, e) => href.push(e.attribs.href));
          this.epNum = href.length;
-         const asynciterator = async item => {
+         const asynciterator = async (
+            item: string
+         ): Promise<DataItem | undefined> => {
             const { data } = await instance.get(item);
             const $ = cheerio.load(data);
             const url = new URL(
@@ -110,7 +175,7 @@ class Vidstreaming extends EventEmitter {
             const filename = path.basename(srcUrl);
             const ext = path.extname(srcUrl);
             const ep = Number(path.basename(item).split('-').pop());
-            const animeData = {
+            const animeData: DataItem = {
                filename,
                ep,
                ext,
@@ -118,7 +183,7 @@ class Vidstreaming extends EventEmitter {
                title,
                src,
             };
-            this.data.push(animeData.id);
+            this.data.push(animeData);
             this.filter &&
                this.filter.async &&
                this.emit('loaded', this.data.length, this.epNum, animeData);
@@ -130,21 +195,24 @@ class Vidstreaming extends EventEmitter {
                newHref = await Aigle.resolve(href)
                   .filter(ref => epilist.includes(Number(ref.split('-').pop())))
                   .map(asynciterator)
-                  .sortBy('ep');
             }
          } else {
-            newHref = await Aigle.resolve(href).map(asynciterator).sortBy('ep');
+            newHref = await Aigle.resolve(href)
+               .map(asynciterator)
          }
-         return newHref;
       } catch (err) {
          // console.error('Something went wrong - 98\n', err.message);
          this.emit('error', err, 'error3');
       } finally {
-         results = newHref;
+         results = newHref.sort((a: any, b: any) => a.ep - b.ep);
          if (cb) cb(results);
+         return results
       }
    }
-   async getEpisodes(id, cb) {
+   async getEpisodes(
+      id: string | null,
+      cb?: (result: string) => void
+   ): Promise<string> {
       let results;
       try {
          if (this.res) {
@@ -154,9 +222,9 @@ class Vidstreaming extends EventEmitter {
                   id,
                },
             });
-            const resList = [];
+            const resList: string[] = [];
             const $ = cheerio.load(data);
-            $('.mirror_link .dowload a').each((i, e) =>
+            $('.mirror_link .dowload a').each((_i, e) =>
                resList.push(e.attribs.href)
             );
             results = resList.filter(i => i.toString().search(res) > -1)[0];
@@ -168,13 +236,12 @@ class Vidstreaming extends EventEmitter {
             });
             results = anime.data.source.shift().file;
          }
-         return results;
       } catch (err) {
          // console.error('Something went wrong - 128\n', e.message);
          this.emit('error', err, 'getEpisodes');
-      } finally {
-         if (cb) cb(results);
       }
+      if (cb) cb(results);
+      return results;
    }
 
    /* download(format, dest) {

@@ -1,4 +1,4 @@
-import Vidstreaming from './vidstreaming';
+import Vidstreaming from '.dist/vidstreaming';
 
 describe('Vidstreaming API test...', () => {
    test('Basic episode fetching...', async done => {
