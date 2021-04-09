@@ -103,3 +103,5 @@ typings/
 *.sublime-*
 *.sublime-project
 *.sublime-workspace
+yarn.lock
+package-lock.json

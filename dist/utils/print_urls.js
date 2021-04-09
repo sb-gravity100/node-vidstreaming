@@ -9,10 +9,10 @@ exports.printUrls = void 0;
 
 var _loading = _interopRequireDefault(require("./loading"));
 
-var _vidstreaming = require("../vidstreaming");
+var _vidstreaming = _interopRequireDefault(require("../vidstreaming"));
 
-const printUrls = (name, res, filter) => {
-  const vid = new _vidstreaming.Vidstreaming(name, res, filter);
+const printUrls = (anime, res, filter) => {
+  const vid = new _vidstreaming.default(null, res, filter);
 
   _loading.default.start();
 
@@ -22,7 +22,7 @@ const printUrls = (name, res, filter) => {
     console.error('Something went wrong', line, '\n', err.message);
     process.exit(1);
   });
-  vid.episodes().then(data => {
+  vid.episodes(anime.link).then(data => {
     if (filter.async) {
       vid.on('loaded', (dataLength, length, item) => {
         if (dataLength === length) {

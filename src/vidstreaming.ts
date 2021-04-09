@@ -16,6 +16,7 @@ axiosRetry(instance, { retries: 5 });
 interface FilterInterface {
    episodes?: number[];
    async?: boolean;
+   catch?: boolean;
 }
 
 interface SearchListItem {
@@ -70,7 +71,7 @@ class Vidstreaming extends EventEmitter implements VidstreamingInterface {
       super();
       this.search = search;
       this.res = res;
-      this.filter = filter;
+      this.filter = filter || {};
       this.data = [];
       this.searchlist = [];
       this.epNum = 0;
@@ -97,7 +98,7 @@ class Vidstreaming extends EventEmitter implements VidstreamingInterface {
          const $ = cheerio.load(anime.data.content);
          $('ul a').each((i, e): number => {
             this.searchlist.push({
-               title: e.firstChild.data,
+               title: e.children[0].data || 'No Title Found',
                link: e.attribs.href,
                eps: Number(e.attribs.href.split('-').pop()),
             });
@@ -138,10 +139,13 @@ class Vidstreaming extends EventEmitter implements VidstreamingInterface {
          } else {
             epData = await this.getList(a);
          }
-         this.emit('ready', epData);
          result = epData;
       } catch (e) {
-         this.emit('error', e, 'error2');
+         if (this.filter && this.filter.catch) {
+            throw e;
+         } else {
+            this.emit('error', e, 'error2');
+         }
       } finally {
          if (cb) cb(result);
          return result;
@@ -184,36 +188,36 @@ class Vidstreaming extends EventEmitter implements VidstreamingInterface {
                src,
             };
             this.data.push(animeData);
-            this.filter &&
-               this.filter.async &&
+            if (this.filter && this.filter.async) {
                this.emit('loaded', this.data.length, this.epNum, animeData);
+            }
             return animeData;
          };
-         if (this.filter) {
-            if (this.filter.episodes) {
-               const epilist = this.filter.episodes;
-               newHref = await Aigle.resolve(href)
-                  .filter(ref => epilist.includes(Number(ref.split('-').pop())))
-                  .map(asynciterator)
-            }
-         } else {
+         if (this.filter && this.filter.episodes) {
+            const epilist = this.filter.episodes;
             newHref = await Aigle.resolve(href)
-               .map(asynciterator)
+               .filter(ref => epilist.includes(Number(ref.split('-').pop())))
+               .map(asynciterator);
+         } else {
+            newHref = await Aigle.resolve(href).map(asynciterator);
          }
       } catch (err) {
-         // console.error('Something went wrong - 98\n', err.message);
-         this.emit('error', err, 'error3');
+         if (this.filter && this.filter.catch) {
+            throw err;
+         } else {
+            this.emit('error', err, 'error3');
+         }
       } finally {
          results = newHref.sort((a: any, b: any) => a.ep - b.ep);
          if (cb) cb(results);
-         return results
+         return results;
       }
    }
    async getEpisodes(
       id: string | null,
       cb?: (result: string) => void
    ): Promise<string> {
-      let results;
+      let results: any;
       try {
          if (this.res) {
             const res = this.res;
@@ -237,8 +241,11 @@ class Vidstreaming extends EventEmitter implements VidstreamingInterface {
             results = anime.data.source.shift().file;
          }
       } catch (err) {
-         // console.error('Something went wrong - 128\n', e.message);
-         this.emit('error', err, 'getEpisodes');
+         if (this.filter && this.filter.catch) {
+            throw err;
+         } else {
+            this.emit('error', err, 'getEpisodes');
+         }
       }
       if (cb) cb(results);
       return results;

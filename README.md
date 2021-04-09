@@ -69,5 +69,5 @@ Output:
   ```sh
   vidstreaming search "jujutsu kaisen" --async
   ```
-  _Note: If the `-D` and `-R` options are omitted then it will log the urls to the console._
+  _Note: If the `-D` and `-R` options are omitted then it will log the urls to the console._  
   _Note: Urls order are not guaranteed in async mode._

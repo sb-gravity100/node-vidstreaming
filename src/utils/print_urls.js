@@ -1,8 +1,8 @@
 import loading from './loading';
-import { Vidstreaming } from '../vidstreaming';
+import Vidstreaming from '../vidstreaming';
 
-export const printUrls = (name, res, filter) => {
-  const vid = new Vidstreaming(name, res, filter);
+export const printUrls = (anime, res, filter) => {
+  const vid = new Vidstreaming(null, res, filter);
   loading.start();
   loading.message('Printing urls to console...');
 
@@ -12,7 +12,7 @@ export const printUrls = (name, res, filter) => {
     process.exit(1);
   });
 
-  vid.episodes().then(data => {
+  vid.episodes(anime.link).then(data => {
     if (filter.async) {
       // Loaded listener
       vid.on('loaded', (dataLength, length, item) => {
