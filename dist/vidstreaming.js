@@ -17,6 +17,8 @@ var _axiosRetry = _interopRequireDefault(require("axios-retry"));
 
 var cheerio = _interopRequireWildcard(require("cheerio"));
 
+var fs = _interopRequireWildcard(require("fs"));
+
 var path = _interopRequireWildcard(require("path"));
 
 var _events = require("events");
@@ -37,24 +39,18 @@ const instance = _axios.default.create({
 });
 
 class Vidstreaming extends _events.EventEmitter {
-  constructor(search, res, filter) {
+  constructor(res, filter) {
     super();
-    (0, _defineProperty2.default)(this, "search", void 0);
     (0, _defineProperty2.default)(this, "res", void 0);
     (0, _defineProperty2.default)(this, "filter", void 0);
     (0, _defineProperty2.default)(this, "data", void 0);
-    (0, _defineProperty2.default)(this, "searchlist", void 0);
-    (0, _defineProperty2.default)(this, "epNum", void 0);
-    this.search = search;
     this.res = res;
-    this.filter = filter || {};
+    this.filter = filter;
     this.data = [];
-    this.searchlist = [];
-    this.epNum = 0;
   }
 
   async term(term, cb) {
-    let result;
+    let result = [];
 
     try {
       const anime = await instance.get('/ajax-search.html', {
@@ -72,20 +68,21 @@ class Vidstreaming extends _events.EventEmitter {
       }
 
       const $ = cheerio.load(anime.data.content);
-      $('ul a').each((i, e) => {
-        this.searchlist.push({
+      $('ul a').each((_i, e) => {
+        result.push({
           title: e.children[0].data || 'No Title Found',
           link: e.attribs.href,
           eps: Number(e.attribs.href.split('-').pop())
         });
-        return i;
       });
-      result = this.searchlist;
     } catch (err) {
       this.emit('error', err, 'error1');
     } finally {
-      if (cb) cb(result);
-      return result;
+      if (cb) {
+        cb(result);
+      } else {
+        return result;
+      }
     }
   }
 
@@ -94,29 +91,7 @@ class Vidstreaming extends _events.EventEmitter {
 
     try {
       let epData;
-
-      if (!a) {
-        const anime = await instance.get('/ajax-search.html', {
-          params: {
-            keyword: this.search
-          }
-        });
-
-        if (anime.data.content === '' || !anime.data.content) {
-          throw {
-            message: 'No anime data found',
-            code: 'ANINOTFOUND',
-            name: 'Error'
-          };
-        }
-
-        const $ = cheerio.load(anime.data.content);
-        const link = $('ul a')[0].attribs.href;
-        epData = await this.getList(link);
-      } else {
-        epData = await this.getList(a);
-      }
-
+      epData = await this.getList(a);
       result = epData;
     } catch (e) {
       if (this.filter && this.filter.catch) {
@@ -125,8 +100,11 @@ class Vidstreaming extends _events.EventEmitter {
         this.emit('error', e, 'error2');
       }
     } finally {
-      if (cb) cb(result);
-      return result;
+      if (cb) {
+        cb(result);
+      } else {
+        return result;
+      }
     }
   }
 
@@ -134,6 +112,7 @@ class Vidstreaming extends _events.EventEmitter {
     let results, newHref;
 
     try {
+      let epNum;
       const {
         data
       } = await instance.get(link);
@@ -141,7 +120,7 @@ class Vidstreaming extends _events.EventEmitter {
       const list = $('.listing.items.lists .video-block a');
       const href = [];
       list.each((_i, e) => href.push(e.attribs.href));
-      this.epNum = href.length;
+      epNum = href.length;
 
       const asynciterator = async (item) => {
         const {
@@ -165,11 +144,7 @@ class Vidstreaming extends _events.EventEmitter {
           src
         };
         this.data.push(animeData);
-
-        if (this.filter && this.filter.async) {
-          this.emit('loaded', this.data.length, this.epNum, animeData);
-        }
-
+        this.emit('loaded', this.data, epNum, animeData);
         return animeData;
       };
 
@@ -187,8 +162,13 @@ class Vidstreaming extends _events.EventEmitter {
       }
     } finally {
       results = newHref.sort((a, b) => a.ep - b.ep);
-      if (cb) cb(results);
-      return results;
+      this.emit('ready', results);
+
+      if (cb) {
+        cb(results);
+      } else {
+        return results;
+      }
     }
   }
 
@@ -225,11 +205,80 @@ class Vidstreaming extends _events.EventEmitter {
       }
     }
 
-    if (cb) cb(results);
-    return results;
+    if (cb) {
+      cb(results);
+    } else {
+      return results;
+    }
+  }
+
+  async download(output, list) {
+    const downloadHandler = data => {
+      let i = 0;
+
+      const queue = async () => {
+        const anime = await _axios.default.get(data[i].src, {
+          responseType: 'stream'
+        });
+        const source = fs.createReadStream(anime.data);
+        const stream = fs.createWriteStream(path.join(output, `EP.${data[i].ep + data[i].ext}`));
+        stream.on('finish', () => {
+          console.log(data[i].title, 'Done');
+          i++;
+          queue();
+        });
+        source.on('error', err => {
+          console.log(err.message);
+          i = 0;
+        });
+        stream.on('error', err => {
+          console.log(err.message);
+        });
+        source.on('data', data => {
+          this.emit('download', data);
+          source.pipe(stream);
+        });
+        source.on('end', () => {
+          stream.end();
+        });
+      };
+    };
+
+    try {
+      if (list) {
+        downloadHandler(list);
+      } else {
+        this.on('ready', downloadHandler);
+      }
+    } catch (e) {
+      if (this.filter && this.filter.catch) {
+        throw e;
+      } else {
+        this.emit('error', e);
+      }
+    }
+  }
+
+  async writeTo(output, list) {
+    const stream = fs.createWriteStream(output);
+
+    const outputHandler = data => {};
+
+    try {
+      if (list) {
+        outputHandler(list);
+      } else {
+        this.on('ready', outputHandler);
+      }
+    } catch (e) {
+      if (this.filter && this.filter.catch) {
+        throw e;
+      } else {
+        this.emit('error', e);
+      }
+    }
   }
 
 }
 
-var _default = Vidstreaming;
-exports.default = _default;
+exports.default = Vidstreaming;

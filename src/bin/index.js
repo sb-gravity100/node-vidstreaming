@@ -21,11 +21,6 @@ const callSearch = async title => {
     const list = await searchUrls(title);
     const answers = await inquirer.prompt(prompts(options, list));
     if (answers) {
-      if (options.download && options.output) {
-        throw new Error(
-          'You either choose to output urls to txt or download them'
-        );
-      }
       console.log(options);
       options.anime = answers.anime;
       middleware(options, argsHandler);
@@ -40,7 +35,6 @@ const argsHandler = argv => {
     console.log(boxxx(outputModeBox, argv));
     getUrls(argv.anime, argv.output, argv.resolution, {
       episodes: argv.episodes,
-      async: argv.async,
     });
   }
   // Download URls
@@ -54,7 +48,6 @@ const argsHandler = argv => {
     console.log(boxxx(printModeBox, argv));
     printUrls(argv.anime, argv.resolution, {
       episodes: argv.episodes,
-      async: argv.async || false,
     });
   }
 };

@@ -7,6 +7,22 @@ export default (options, list) => [
     default: 1,
   },
   {
+    type: 'list',
+    name: 'res',
+    message: 'Video quality?',
+    choices: ['1080', '720', '480', '360', {name: 'Original', value: undefined}],
+    default: undefined,
+    when: !options.R || !options.res,
+    transformer: input => {
+      if (!input || input === '') {
+        return false;
+      }
+      options.R = input;
+      options.resolution = input;
+      return input;
+    },
+  },
+  {
     type: 'input',
     name: 'download',
     message: 'Download path:',

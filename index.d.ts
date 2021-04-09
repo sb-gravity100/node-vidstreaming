@@ -1,47 +1,47 @@
 /// <reference types="node" />
 declare module "vidstreaming" {
     import { EventEmitter } from 'events';
-    interface FilterInterface {
+    export interface FilterOptions {
         episodes?: number[];
-        async?: boolean;
+        catch?: boolean;
     }
-    interface SearchListItem {
+    export interface SearchData {
         title: string;
         link: string;
         eps: number;
     }
-    interface DataItem {
+    export interface AnimeData {
         filename: string;
         ep: number;
         ext: string;
         id: string | null;
         title: string;
-        src: string;
+        src: string | undefined;
     }
-    interface VidstreamingInterface {
-        search?: string;
+    export interface VidstreamingInterface {
         res?: string;
-        filter?: FilterInterface;
-        data: Array<DataItem>;
-        searchlist: Array<SearchListItem>;
-        epNum: number;
-        term(term?: string, cb?: (result: Array<SearchListItem>) => void): Promise<Array<SearchListItem>>;
-        episodes(a?: string, cb?: (result: Array<DataItem>) => void): Promise<Array<DataItem>>;
-        getList(link: string, cb?: (result: Array<DataItem>) => void): Promise<Array<DataItem>>;
-        getEpisodes(id: string | null, cb?: (result: string) => void): Promise<string>;
+        filter?: FilterOptions;
+        data: Array<AnimeData>;
+        term(term?: string, cb?: (result: Array<SearchData>) => void): Promise<Array<SearchData> | undefined>;
+        episodes(a?: string, cb?: (result: Array<AnimeData>) => void): Promise<Array<AnimeData> | undefined>;
+        download(output: string, list?: Array<AnimeData>): Promise<void>;
+        writeTo(output: string, list?: Array<AnimeData>): Promise<void>;
     }
-    class Vidstreaming extends EventEmitter implements VidstreamingInterface {
-        search?: string;
+    export default class Vidstreaming extends EventEmitter implements VidstreamingInterface {
         res?: string;
-        filter?: FilterInterface;
-        data: Array<DataItem>;
-        searchlist: Array<SearchListItem>;
-        epNum: number;
-        constructor(search?: string, res?: string, filter?: FilterInterface);
-        term(term?: string, cb?: (result: Array<SearchListItem>) => void): Promise<Array<SearchListItem>>;
-        episodes(a?: string, cb?: (result: Array<DataItem>) => void): Promise<Array<DataItem>>;
-        getList(link: string, cb?: (result: Array<DataItem>) => void): Promise<Array<DataItem>>;
-        getEpisodes(id: string | null, cb?: (result: string) => void): Promise<string>;
+        filter?: FilterOptions;
+        data: Array<AnimeData>;
+        constructor(res?: string, filter?: FilterOptions);
+        term(term: string, cb?: (result: Array<SearchData>) => void): Promise<Array<SearchData> | undefined>;
+        episodes(a: string, cb?: (result: Array<AnimeData>) => void): Promise<Array<AnimeData> | undefined>;
+        protected getList(link: string, cb?: (result: Array<AnimeData>) => void): Promise<Array<AnimeData> | undefined>;
+        protected getEpisodes(id: string | null, cb?: (result: string) => void): Promise<string | undefined>;
+        download(output: string, list?: Array<AnimeData>): Promise<void>;
+        writeTo(output: string, list?: Array<AnimeData>): Promise<void>;
     }
-    export default Vidstreaming;
+}
+declare module "utils/url_utils" {
+    import { SearchData, FilterOptions } from "vidstreaming";
+    export function searchUrls(search: string): Promise<Array<SearchData> | undefined>;
+    export function writeUrls(anime: SearchData, output: string, res?: string, options?: FilterOptions): Promise<void>;
 }

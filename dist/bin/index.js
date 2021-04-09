@@ -30,10 +30,6 @@ const callSearch = async title => {
     const answers = await _inquirer.default.prompt((0, _prompts.default)(_args.options, list));
 
     if (answers) {
-      if (_args.options.download && _args.options.output) {
-        throw new Error('You either choose to output urls to txt or download them');
-      }
-
       console.log(_args.options);
       _args.options.anime = answers.anime;
       (0, _middleware.middleware)(_args.options, argsHandler);
@@ -47,8 +43,7 @@ const argsHandler = argv => {
   if (argv.O) {
     console.log((0, _boxes.boxxx)(_boxes.outputModeBox, argv));
     (0, _get_urls.getUrls)(argv.anime, argv.output, argv.resolution, {
-      episodes: argv.episodes,
-      async: argv.async
+      episodes: argv.episodes
     });
   }
 
@@ -59,8 +54,7 @@ const argsHandler = argv => {
   if (!argv.O && !argv.D) {
     console.log((0, _boxes.boxxx)(_boxes.printModeBox, argv));
     (0, _print_urls.printUrls)(argv.anime, argv.resolution, {
-      episodes: argv.episodes,
-      async: argv.async || false
+      episodes: argv.episodes
     });
   }
 };

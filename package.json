@@ -7,7 +7,8 @@
     "test": "jest",
     "transpile": "babel ./src --out-dir ./dist --no-comments --extensions \".js,.ts\"",
     "clean": "rimraf ./dist",
-    "build": "npm-run-all clean transpile",
+    "type": "tsc",
+    "build": "npm-run-all clean transpile type",
     "watch": "npm run clean & babel ./src --out-dir ./dist --no-comments --extensions \".js,.ts\" -w"
   },
   "repository": {
