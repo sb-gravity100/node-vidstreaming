@@ -1,5 +1,7 @@
+import clipboard from 'clipboardy'
+import chalk from 'chalk'
+import fs from 'fs'
 import loading from './loading';
-import * as fs from 'fs';
 import Vidstreaming, { SearchData, FilterOptions } from '../vidstreaming';
 
 export async function searchUrls(
@@ -32,19 +34,54 @@ export async function writeUrls(
    options?: FilterOptions
 ): Promise<void> {
    const instance = new Vidstreaming(res, options)
-   const stream = fs.createWriteStream(output);
    loading.start()
 
    instance.on('error', err => {
+      process.stdout.clearLine(0)
+      process.stdout.cursorTo(0);
+      console.log(err.message);
+      fs.unlink(output, e => {
+         if (e) {
+            console.log(e.message);
+         }
+      })
+      process.exit(1)
+   })
+   instance.on('loaded', (urls, total) => {
+      process.stdout.clearLine(0)
+      process.stdout.cursorTo(0);
+      loading.message(`Getting urls... ${urls.length} / ${total}`)
+   })
+   instance.on('write', () => {
+      process.stdout.clearLine(0)
+      process.stdout.cursorTo(0);
+      loading.message('Writing to file...')
+   })
+
+   const data = await instance.episodes(anime.link)
+   await instance.writeTo(output, data)
+   loading.stop()
+   console.log(chalk.greenBright('  URLS written successfully'));
+}
+
+export async function clipboardUrls(anime: SearchData, res?: string, options?: FilterOptions): Promise<void> {
+   const instance = new Vidstreaming(res, options)
+   loading.start()
+
+   instance.on('error', err => {
+      process.stdout.clearLine(0)
+      process.stdout.cursorTo(0);
       console.log(err.message);
       process.exit(1)
    })
    instance.on('loaded', (urls, total) => {
-      process.stdout.clearLine()
+      process.stdout.clearLine(0)
       process.stdout.cursorTo(0);
-      loading.message(`${urls.length} / ${total}`)
+      loading.message(`Getting urls... ${urls.length} / ${total} Episodes`)
    })
-
-   await instance.episodes(anime.link)
-   await instance.writeTo(output)
+   const data = await instance.episodes(anime.link)
+   const data_string = data ? data.map(d => d.src).join('\n') : ''
+   await clipboard.write(data_string)
+   loading.stop()
+   process.stdout.write(chalk.greenBright('  Copied urls to clipboard'));
 }

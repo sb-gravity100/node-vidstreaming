@@ -37,11 +37,6 @@ declare module "vidstreaming" {
         protected getList(link: string, cb?: (result: Array<AnimeData>) => void): Promise<Array<AnimeData> | undefined>;
         protected getEpisodes(id: string | null, cb?: (result: string) => void): Promise<string | undefined>;
         download(output: string, list?: Array<AnimeData>): Promise<void>;
-        writeTo(output: string, list?: Array<AnimeData>): Promise<void>;
+        writeTo(output: string, list?: Array<AnimeData>, cb?: () => void): Promise<void>;
     }
-}
-declare module "utils/url_utils" {
-    import { SearchData, FilterOptions } from "vidstreaming";
-    export function searchUrls(search: string): Promise<Array<SearchData> | undefined>;
-    export function writeUrls(anime: SearchData, output: string, res?: string, options?: FilterOptions): Promise<void>;
 }

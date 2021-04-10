@@ -1,9 +1,28 @@
 import yargs from 'yargs';
 
+export interface Argv {
+  $0: string;
+  [x: string]: unknown | string;
+  _: (string | number)[];
+  D: string | undefined;
+  download?: string;
+  E: (string | number)[] | undefined;
+  episodes?: (string | number)[] | undefined;
+  O: string | undefined;
+  output?: string | undefined;
+  R: string | undefined;
+  resolution?: string | undefined;
+  S: string | undefined;
+  search?: string | undefined;
+}
+
 // CLI Arguments
-export const options = yargs
+export const options: Argv = yargs
   .scriptName('vidstreaming')
-  .command('Usage: $0 -S <name> [...options]', 'If other options are omitted it will copy urls to clipboard.')
+  .command(
+    'Usage: $0 -S <name> [...options]',
+    'If other options are omitted it will copy urls to clipboard.'
+  )
   .option('S', {
     alias: 'search',
     describe: 'Anime to search for',
@@ -23,9 +42,10 @@ export const options = yargs
   })
   .option('R', {
     alias: 'resolution',
+    type: 'string',
     describe:
       'Output resolution - 360, 480, 720, 1080.\nIf none defaults to original quality.',
-    choices: [360, 480, 720, 1080],
+    choices: ['360', '480', '720', '1080'],
   })
   .option('E', {
     alias: 'episodes',

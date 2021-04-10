@@ -1,9 +1,13 @@
 "use strict";
 
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = void 0;
+
+var _path = _interopRequireDefault(require("path"));
 
 var _default = (options, list) => [{
   type: 'search-list',
@@ -23,31 +27,13 @@ var _default = (options, list) => [{
     value: undefined
   }],
   default: undefined,
-  when: !options.R || !options.res,
-  transformer: input => {
-    if (!input || input === '') {
-      return false;
-    }
-
-    options.R = input;
-    options.resolution = input;
-    return input;
-  }
+  when: !options.R && !options.resolution
 }, {
   type: 'input',
   name: 'download',
   message: 'Download path:',
   default: false,
-  when: !options.D && !options.O,
-  transformer: input => {
-    if (!input || input === '') {
-      return false;
-    }
-
-    options.D = input;
-    options.download = input;
-    return input;
-  }
+  when: !options.D && !options.O
 }, {
   type: 'input',
   name: 'output',
@@ -55,20 +41,11 @@ var _default = (options, list) => [{
   default: false,
   when: !options.D && !options.O,
   validate: input => {
-    if (input && input.search(/\.txt$/i) === -1) {
+    if (input && _path.default.extname(input) !== '.txt') {
       return `File must be a text - (.txt) file.`;
     }
 
     return true;
-  },
-  transformer: input => {
-    if (!input || input === '') {
-      return false;
-    }
-
-    options.O = input;
-    options.output = input;
-    return input;
   }
 }];
 

@@ -1,7 +1,5 @@
 "use strict";
 
-var _interopRequireWildcard = require("@babel/runtime/helpers/interopRequireWildcard");
-
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
 Object.defineProperty(exports, "__esModule", {
@@ -15,11 +13,11 @@ var _axios = _interopRequireDefault(require("axios"));
 
 var _axiosRetry = _interopRequireDefault(require("axios-retry"));
 
-var cheerio = _interopRequireWildcard(require("cheerio"));
+var _cheerio = _interopRequireDefault(require("cheerio"));
 
-var fs = _interopRequireWildcard(require("fs"));
+var _fs = _interopRequireDefault(require("fs"));
 
-var path = _interopRequireWildcard(require("path"));
+var _path = _interopRequireDefault(require("path"));
 
 var _events = require("events");
 
@@ -67,7 +65,8 @@ class Vidstreaming extends _events.EventEmitter {
         };
       }
 
-      const $ = cheerio.load(anime.data.content);
+      const $ = _cheerio.default.load(anime.data.content);
+
       $('ul a').each((_i, e) => {
         result.push({
           title: e.children[0].data || 'No Title Found',
@@ -100,6 +99,8 @@ class Vidstreaming extends _events.EventEmitter {
         this.emit('error', e, 'error2');
       }
     } finally {
+      this.emit('ready', result);
+
       if (cb) {
         cb(result);
       } else {
@@ -116,7 +117,9 @@ class Vidstreaming extends _events.EventEmitter {
       const {
         data
       } = await instance.get(link);
-      const $ = cheerio.load(data);
+
+      const $ = _cheerio.default.load(data);
+
       const list = $('.listing.items.lists .video-block a');
       const href = [];
       list.each((_i, e) => href.push(e.attribs.href));
@@ -126,15 +129,20 @@ class Vidstreaming extends _events.EventEmitter {
         const {
           data
         } = await instance.get(item);
-        const $ = cheerio.load(data);
+
+        const $ = _cheerio.default.load(data);
+
         const url = new URL('https:' + $('.play-video iframe')[0].attribs.src);
         const id = url.searchParams.get('id');
         const title = $('.video-info-left h1')[0].children[0].data;
         const src = await this.getEpisodes(id);
         const srcUrl = new URL(src).pathname;
-        const filename = path.basename(srcUrl);
-        const ext = path.extname(srcUrl);
-        const ep = Number(path.basename(item).split('-').pop());
+
+        const filename = _path.default.basename(srcUrl);
+
+        const ext = _path.default.extname(srcUrl);
+
+        const ep = Number(_path.default.basename(item).split('-').pop());
         const animeData = {
           filename,
           ep,
@@ -162,7 +170,6 @@ class Vidstreaming extends _events.EventEmitter {
       }
     } finally {
       results = newHref.sort((a, b) => a.ep - b.ep);
-      this.emit('ready', results);
 
       if (cb) {
         cb(results);
@@ -186,7 +193,9 @@ class Vidstreaming extends _events.EventEmitter {
           }
         });
         const resList = [];
-        const $ = cheerio.load(data);
+
+        const $ = _cheerio.default.load(data);
+
         $('.mirror_link .dowload a').each((_i, e) => resList.push(e.attribs.href));
         results = resList.filter(i => i.toString().search(res) > -1)[0];
       } else {
@@ -220,8 +229,11 @@ class Vidstreaming extends _events.EventEmitter {
         const anime = await _axios.default.get(data[i].src, {
           responseType: 'stream'
         });
-        const source = fs.createReadStream(anime.data);
-        const stream = fs.createWriteStream(path.join(output, `EP.${data[i].ep + data[i].ext}`));
+
+        const source = _fs.default.createReadStream(anime.data);
+
+        const stream = _fs.default.createWriteStream(_path.default.join(output, `EP.${data[i].ep + data[i].ext}`));
+
         stream.on('finish', () => {
           console.log(data[i].title, 'Done');
           i++;
@@ -259,16 +271,24 @@ class Vidstreaming extends _events.EventEmitter {
     }
   }
 
-  async writeTo(output, list) {
-    const stream = fs.createWriteStream(output);
-
-    const outputHandler = data => {};
-
+  async writeTo(output, list, cb) {
     try {
+      _fs.default.writeFileSync(output, '');
+
+      const stream = _fs.default.createWriteStream(output, {
+        flags: 'a+'
+      });
+
+      const outputHandler = data => {
+        const data_string = data.map(d => d.src).join('\n');
+        this.emit('write');
+        stream.end(data_string);
+      };
+
       if (list) {
         outputHandler(list);
       } else {
-        this.on('ready', outputHandler);
+        this.on('ready', data => outputHandler(data));
       }
     } catch (e) {
       if (this.filter && this.filter.catch) {
@@ -277,6 +297,8 @@ class Vidstreaming extends _events.EventEmitter {
         this.emit('error', e);
       }
     }
+
+    if (cb) cb();
   }
 
 }

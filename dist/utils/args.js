@@ -23,8 +23,9 @@ const options = _yargs.default.scriptName('vidstreaming').command('Usage: $0 -S 
   type: 'string'
 }).option('R', {
   alias: 'resolution',
+  type: 'string',
   describe: 'Output resolution - 360, 480, 720, 1080.\nIf none defaults to original quality.',
-  choices: [360, 480, 720, 1080]
+  choices: ['360', '480', '720', '1080']
 }).option('E', {
   alias: 'episodes',
   describe: 'Values separated by commas.',

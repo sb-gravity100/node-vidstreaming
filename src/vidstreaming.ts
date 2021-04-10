@@ -1,8 +1,8 @@
 import axios from 'axios';
 import axiosRetry from 'axios-retry';
-import * as cheerio from 'cheerio';
-import * as fs from 'fs';
-import * as path from 'path';
+import cheerio from 'cheerio';
+import fs from 'fs';
+import path from 'path';
 import { EventEmitter } from 'events';
 import { Aigle } from 'aigle';
 
@@ -117,6 +117,7 @@ export default class Vidstreaming
             this.emit('error', e, 'error2');
          }
       } finally {
+         this.emit('ready', result);
          if (cb) {
             cb(result);
          } else {
@@ -181,7 +182,6 @@ export default class Vidstreaming
          }
       } finally {
          results = newHref.sort((a: any, b: any) => a.ep - b.ep);
-         this.emit('ready', results);
          if (cb) {
             cb(results);
          } else {
@@ -254,7 +254,7 @@ export default class Vidstreaming
                console.log(err.message);
             });
             source.on('data', data => {
-               this.emit('download', data)
+               this.emit('download', data);
                source.pipe(stream);
             });
             source.on('end', () => {
@@ -277,17 +277,23 @@ export default class Vidstreaming
       }
    }
 
-   async writeTo(output: string, list?: Array<AnimeData>): Promise<void> {
-      const stream = fs.createWriteStream(output)
-      const outputHandler = (data): void => {
-         
-      };
+   async writeTo(
+      output: string,
+      list?: Array<AnimeData>,
+      cb?: () => void
+   ): Promise<void> {
       try {
-
+         fs.writeFileSync(output, '');
+         const stream = fs.createWriteStream(output, { flags: 'a+' });
+         const outputHandler = (data: Array<AnimeData>): void => {
+            const data_string = data.map(d => d.src).join('\n');
+            this.emit('write');
+            stream.end(data_string);
+         };
          if (list) {
             outputHandler(list);
          } else {
-            this.on('ready', outputHandler);
+            this.on('ready', data => outputHandler(data));
          }
       } catch (e) {
          if (this.filter && this.filter.catch) {
@@ -296,5 +302,6 @@ export default class Vidstreaming
             this.emit('error', e);
          }
       }
+      if (cb) cb();
    }
 }

@@ -20,9 +20,11 @@ const boxenOptions = {
   dimBorder: true
 };
 
-const outputModeBox = argv => _chalk.default.white(`Title          -   ${_chalk.default.greenBright(argv.anime.title)}
+const outputModeBox = argv => {
+  return _chalk.default.white(`Title          -   ${_chalk.default.greenBright(argv.anime.title)}
 Output         -   ${_chalk.default.yellow(_path.default.basename(argv.O))}
 Quality        -   ${_chalk.default.red(argv.R ? argv.R + 'p' : 'Original')}`);
+};
 
 exports.outputModeBox = outputModeBox;
 

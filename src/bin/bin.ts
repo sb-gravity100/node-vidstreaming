@@ -1,12 +1,10 @@
 import inquirer from 'inquirer';
 import _ from 'lodash';
 import { options } from '../utils/args';
-import { getUrls } from '../utils/get_urls';
-import { printUrls } from '../utils/print_urls';
-import { searchUrls } from '../utils/search_url';
 import chalk from 'chalk';
-import { middleware } from '../utils/middleware';
+import { middleware, AnimeOptions } from '../utils/middleware';
 import prompts from '../utils/prompts';
+import { searchUrls, writeUrls, clipboardUrls } from '../utils/url_utils';
 import {
   boxxx,
   downloadModeBox,
@@ -16,24 +14,33 @@ import {
 
 inquirer.registerPrompt('search-list', require('inquirer-search-list'));
 
-const callSearch = async title => {
+const callSearch = async (title: string) => {
   try {
     const list = await searchUrls(title);
     const answers = await inquirer.prompt(prompts(options, list));
-    if (answers) {
-      console.log(options);
-      options.anime = answers.anime;
-      middleware(options, argsHandler);
+    options.anime = answers.anime;
+    if (!options.R) {
+      options.R = answers.res;
+      options.resolution = answers.res;
     }
+    if (!options.D) {
+      options.D = answers.download;
+      options.download = answers.download;
+    }
+    if (!options.O) {
+      options.O = answers.output;
+      options.output = answers.output;
+    }
+    middleware(options, argsHandler);
   } catch (e) {
     console.error(chalk.yellow.dim(e.message || 'Something went wrong.'));
   }
 };
-const argsHandler = argv => {
+const argsHandler = (argv: AnimeOptions) => {
   // Output urls to file
   if (argv.O) {
     console.log(boxxx(outputModeBox, argv));
-    getUrls(argv.anime, argv.output, argv.resolution, {
+    writeUrls(argv.anime, argv.output, argv.resolution, {
       episodes: argv.episodes,
     });
   }
@@ -46,7 +53,7 @@ const argsHandler = argv => {
   // Copy urls to clipboard. Note: Async mode doesn't work here...
   if (!argv.O && !argv.D) {
     console.log(boxxx(printModeBox, argv));
-    printUrls(argv.anime, argv.resolution, {
+    clipboardUrls(argv.anime, argv.resolution, {
       episodes: argv.episodes,
     });
   }
@@ -55,7 +62,7 @@ const argsHandler = argv => {
 if (options.S) {
   callSearch(options.search);
 }
-if (!options.S || options.S === '') {
+if (!options.search || options.search === '') {
   inquirer
     .prompt([
       {
@@ -63,5 +70,5 @@ if (!options.S || options.S === '') {
         message: 'Search Anime |',
       },
     ])
-    .then(answers => callSearch(answers.search));
+    .then((answers: any) => callSearch(answers.search));
 }

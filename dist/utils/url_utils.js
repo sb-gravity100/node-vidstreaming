@@ -1,7 +1,5 @@
 "use strict";
 
-var _interopRequireWildcard = require("@babel/runtime/helpers/interopRequireWildcard");
-
 var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
 Object.defineProperty(exports, "__esModule", {
@@ -9,10 +7,15 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.searchUrls = searchUrls;
 exports.writeUrls = writeUrls;
+exports.clipboardUrls = clipboardUrls;
+
+var _clipboardy = _interopRequireDefault(require("clipboardy"));
+
+var _chalk = _interopRequireDefault(require("chalk"));
+
+var _fs = _interopRequireDefault(require("fs"));
 
 var _loading = _interopRequireDefault(require("./loading"));
-
-var fs = _interopRequireWildcard(require("fs"));
 
 var _vidstreaming = _interopRequireDefault(require("../vidstreaming"));
 
@@ -39,20 +42,64 @@ async function searchUrls(search) {
 
 async function writeUrls(anime, output, res, options) {
   const instance = new _vidstreaming.default(res, options);
-  const stream = fs.createWriteStream(output);
 
   _loading.default.start();
 
   instance.on('error', err => {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+    console.log(err.message);
+
+    _fs.default.unlink(output, e => {
+      if (e) {
+        console.log(e.message);
+      }
+    });
+
+    process.exit(1);
+  });
+  instance.on('loaded', (urls, total) => {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+
+    _loading.default.message(`Getting urls... ${urls.length} / ${total}`);
+  });
+  instance.on('write', () => {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+
+    _loading.default.message('Writing to file...');
+  });
+  const data = await instance.episodes(anime.link);
+  await instance.writeTo(output, data);
+
+  _loading.default.stop();
+
+  console.log(_chalk.default.greenBright('  URLS written successfully'));
+}
+
+async function clipboardUrls(anime, res, options) {
+  const instance = new _vidstreaming.default(res, options);
+
+  _loading.default.start();
+
+  instance.on('error', err => {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
     console.log(err.message);
     process.exit(1);
   });
   instance.on('loaded', (urls, total) => {
-    process.stdout.clearLine();
+    process.stdout.clearLine(0);
     process.stdout.cursorTo(0);
 
-    _loading.default.message(`${urls.length} / ${total}`);
+    _loading.default.message(`Getting urls... ${urls.length} / ${total} Episodes`);
   });
-  await instance.episodes(anime.link);
-  await instance.writeTo(output);
+  const data = await instance.episodes(anime.link);
+  const data_string = data ? data.map(d => d.src).join('\n') : '';
+  await _clipboardy.default.write(data_string);
+
+  _loading.default.stop();
+
+  process.stdout.write(_chalk.default.greenBright('  Copied urls to clipboard'));
 }
