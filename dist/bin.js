@@ -4,17 +4,17 @@ var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefau
 
 var _inquirer = _interopRequireDefault(require("inquirer"));
 
-var _args = require("../utils/args");
+var _args = require("./utils/args");
 
 var _chalk = _interopRequireDefault(require("chalk"));
 
-var _middleware = require("../utils/middleware");
+var _middleware = require("./utils/middleware");
 
-var _prompts = _interopRequireDefault(require("../utils/prompts"));
+var _prompts = _interopRequireDefault(require("./utils/prompts"));
 
-var _url_utils = require("../utils/url_utils");
+var _url_utils = require("./utils/url_utils");
 
-var _boxes = require("../utils/boxes");
+var _boxes = require("./utils/boxes");
 
 _inquirer.default.registerPrompt('search-list', require('inquirer-search-list'));
 
@@ -55,6 +55,9 @@ const argsHandler = argv => {
 
   if (argv.D) {
     console.log((0, _boxes.boxxx)(_boxes.downloadModeBox, argv));
+    (0, _url_utils.downloadUrls)(argv.anime, argv.download, argv.resolution, {
+      episodes: argv.episodes
+    });
   }
 
   if (!argv.O && !argv.D) {

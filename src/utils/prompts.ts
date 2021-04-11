@@ -23,7 +23,13 @@ export default (options: Argv, list: Array<SearchData> | undefined) => [
     name: 'download',
     message: 'Download path:',
     default: false,
-    when: !options.D && !options.O,
+    when: !options.O && !options.D,
+    validate: (input: any) => {
+      if (input && path.extname(input) !== '') {
+        return `Path must be a folder path.`
+      }
+      return true
+    }
   },
   {
     type: 'input',

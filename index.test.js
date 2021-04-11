@@ -2,15 +2,15 @@ import Vidstreaming from '.dist/vidstreaming';
 
 describe('Vidstreaming API test...', () => {
    test('Basic episode fetching...', async done => {
-      const results = await new Vidstreaming('5-toubun').episodes(false);
+      const results = await new Vidstreaming().episodes('5-toubun');
       expect.hasAssertions();
       expect(results).toEqual(
          expect.arrayContaining([
             expect.objectContaining({
-               filename: expect.any(String),
+               filename: expect.stringMatching(/\.(mp4|m3u|mkv)$/i),
                id: expect.stringMatching(/[A-z]{7,}/gi),
                src: expect.any(String),
-               ext: expect.stringMatching(/\.(mp4|m3u)$/gi),
+               ext: expect.stringMatching(/\.(mp4|m3u|mkv)$/i),
                title: expect.any(String),
                ep: expect.any(Number),
             }),

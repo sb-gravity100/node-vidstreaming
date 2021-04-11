@@ -9,7 +9,7 @@ exports.default = void 0;
 
 var _clui = _interopRequireDefault(require("clui"));
 
-const LoadingIcons = ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'];
-const loading = new _clui.default.Spinner('...', LoadingIcons);
+const LoadingIcons = ['⣾⣷', '⣽⣯', '⣻⣟', '⢿⡿', '⡿⢿', '⣟⣻', '⣯⣽', '⣷⣾'];
+const loading = new _clui.default.Spinner('Starting...', LoadingIcons);
 var _default = loading;
 exports.default = _default;

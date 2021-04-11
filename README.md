@@ -1,3 +1,8 @@
+***Not working anymore... Still fixing things...***
+[The Issue Here](3)
+
+[3]: docs/issue.md
+
 # vidstreaming-api-test
 
 Api for downloading or watching anime videos from [gogo-stream.com](1)/[vidstreaming.io](2)

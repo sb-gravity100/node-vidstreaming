@@ -1,16 +1,16 @@
 import inquirer from 'inquirer';
 import _ from 'lodash';
-import { options } from '../utils/args';
+import { options } from './utils/args';
 import chalk from 'chalk';
-import { middleware, AnimeOptions } from '../utils/middleware';
-import prompts from '../utils/prompts';
-import { searchUrls, writeUrls, clipboardUrls } from '../utils/url_utils';
+import { middleware, AnimeOptions } from './utils/middleware';
+import prompts from './utils/prompts';
+import { searchUrls, writeUrls, clipboardUrls, downloadUrls } from './utils/url_utils';
 import {
   boxxx,
   downloadModeBox,
   outputModeBox,
   printModeBox,
-} from '../utils/boxes';
+} from './utils/boxes';
 
 inquirer.registerPrompt('search-list', require('inquirer-search-list'));
 
@@ -47,7 +47,9 @@ const argsHandler = (argv: AnimeOptions) => {
   // Download URls
   if (argv.D) {
     console.log(boxxx(downloadModeBox, argv));
-    // downloadUrls(argv.search, argv.D, argv.R);
+    downloadUrls(argv.anime, argv.download, argv.resolution, {
+      episodes: argv.episodes
+    });
   }
 
   // Copy urls to clipboard. Note: Async mode doesn't work here...
