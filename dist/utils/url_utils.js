@@ -8,12 +8,15 @@ Object.defineProperty(exports, "__esModule", {
 exports.searchUrls = searchUrls;
 exports.writeUrls = writeUrls;
 exports.clipboardUrls = clipboardUrls;
+exports.downloadUrls = downloadUrls;
 
 var _clipboardy = _interopRequireDefault(require("clipboardy"));
 
 var _chalk = _interopRequireDefault(require("chalk"));
 
 var _fs = _interopRequireDefault(require("fs"));
+
+var _progress = _interopRequireDefault(require("progress"));
 
 var _loading = _interopRequireDefault(require("./loading"));
 
@@ -102,4 +105,51 @@ async function clipboardUrls(anime, res, options) {
   _loading.default.stop();
 
   process.stdout.write(_chalk.default.greenBright('  Copied urls to clipboard'));
+}
+
+async function downloadUrls(anime, output, res, options) {
+  const instance = new _vidstreaming.default(res, options);
+
+  _loading.default.start();
+
+  let bar;
+  instance.on('error', err => {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+    console.log(err.message);
+    process.exit(1);
+  });
+  instance.on('queue', (i, f, l) => {
+    _loading.default.stop();
+
+    const len = parseInt(l.length);
+    bar = new _progress.default(`DL - [:bar] ${i.cur}/${i.total} :percent :size/${l.human}`, {
+      width: 30,
+      complete: '#',
+      incomplete: ' ',
+      total: len
+    });
+  });
+  instance.on('loaded', (urls, total) => {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+
+    _loading.default.message(`Getting urls... ${urls.length} / ${total} Episodes`);
+  });
+  instance.on('download', (chunk, _data, _filename) => {
+    const size = require('pretty-bytes')(Number(_data), {
+      maximumFractionDigits: 2
+    });
+
+    bar.tick(chunk.length, {
+      'size': size
+    });
+  });
+  instance.on('done', () => {
+    process.stdout.clearLine(0);
+    console.log('Downloads done~ Exiting...');
+    process.exit(0);
+  });
+  const data = await instance.episodes(anime.link);
+  await instance.download(output, data);
 }

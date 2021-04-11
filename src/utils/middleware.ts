@@ -4,7 +4,7 @@ import { SearchData } from '../vidstreaming'
 import { Argv } from './args'
 
 export interface AnimeOptions extends Argv {
-  anime: SearchData,
+  anime?: SearchData,
   R: string,
   resolution: string;
   O: string;
@@ -42,8 +42,8 @@ export const middleware = (argv: Argv, callback: (argv: AnimeOptions) => void): 
          }
          return newArgs.push(arg);
       });
-      argv.E = _.uniq(newArgs);
-      argv.episodes = _.uniq(newArgs);
+      argv.E = _.chain(newArgs).uniq().sortBy().value();
+      argv.episodes = _.chain(newArgs).uniq().sortBy().value();
    }
    callback(argv);
 };

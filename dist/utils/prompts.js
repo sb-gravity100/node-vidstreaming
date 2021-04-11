@@ -33,7 +33,14 @@ var _default = (options, list) => [{
   name: 'download',
   message: 'Download path:',
   default: false,
-  when: !options.D && !options.O
+  when: !options.O && !options.D,
+  validate: input => {
+    if (input && _path.default.extname(input) !== '') {
+      return `Path must be a folder path.`;
+    }
+
+    return true;
+  }
 }, {
   type: 'input',
   name: 'output',

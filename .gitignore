@@ -105,3 +105,4 @@ typings/
 *.sublime-workspace
 yarn.lock
 package-lock.json
+*.cmd

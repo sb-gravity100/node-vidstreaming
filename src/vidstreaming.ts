@@ -3,6 +3,7 @@ import axiosRetry from 'axios-retry';
 import cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
+import { URL } from 'url';
 import { EventEmitter } from 'events';
 import { Aigle } from 'aigle';
 
@@ -45,8 +46,16 @@ export interface VidstreamingInterface {
       a?: string,
       cb?: (result: Array<AnimeData>) => void
    ): Promise<Array<AnimeData> | undefined>;
-   download(output: string, list?: Array<AnimeData>): Promise<void>;
-   writeTo(output: string, list?: Array<AnimeData>): Promise<void>;
+   download(
+      output: string,
+      list?: Array<AnimeData>,
+      cb?: () => void
+   ): Promise<void>;
+   writeTo(
+      output: string,
+      list?: Array<AnimeData>,
+      cb?: () => void
+   ): Promise<void>;
 }
 
 export default class Vidstreaming
@@ -105,7 +114,7 @@ export default class Vidstreaming
       a: string,
       cb?: (result: Array<AnimeData>) => void
    ): Promise<Array<AnimeData> | undefined> {
-      let result;
+      let result: Array<AnimeData>;
       try {
          let epData: any;
          epData = await this.getList(a);
@@ -117,7 +126,6 @@ export default class Vidstreaming
             this.emit('error', e, 'error2');
          }
       } finally {
-         this.emit('ready', result);
          if (cb) {
             cb(result);
          } else {
@@ -130,7 +138,7 @@ export default class Vidstreaming
       link: string,
       cb?: (result: Array<AnimeData>) => void
    ): Promise<Array<AnimeData> | undefined> {
-      let results, newHref: any;
+      let results: Array<AnimeData>, newHref: any;
       try {
          let epNum: number;
          const { data } = await instance.get(link);
@@ -138,18 +146,17 @@ export default class Vidstreaming
          const list = $('.listing.items.lists .video-block a');
          const href: string[] = [];
          list.each((_i, e) => href.push(e.attribs.href));
-         epNum = href.length;
          const asynciterator = async (
             item: string
          ): Promise<AnimeData | undefined> => {
-            const { data } = await instance.get(item);
-            const $ = cheerio.load(data);
+            const anime = await instance.get(item);
+            const $ = cheerio.load(anime.data);
             const url = new URL(
                'https:' + $('.play-video iframe')[0].attribs.src
             );
             const id = url.searchParams.get('id');
             const title = $('.video-info-left h1')[0].children[0].data;
-            const src = await this.getEpisodes(id);
+            const src = await this._getEpisodes(id);
             const srcUrl = new URL(src).pathname;
             const filename = path.basename(srcUrl);
             const ext = path.extname(srcUrl);
@@ -168,10 +175,14 @@ export default class Vidstreaming
          };
          if (this.filter && this.filter.episodes) {
             const epilist = this.filter.episodes;
+            epNum = href.filter(ref =>
+               epilist.includes(Number(ref.split('-').pop()))
+            ).length;
             newHref = await Aigle.resolve(href)
                .filter(ref => epilist.includes(Number(ref.split('-').pop())))
                .map(asynciterator);
          } else {
+            epNum = href.length;
             newHref = await Aigle.resolve(href).map(asynciterator);
          }
       } catch (err) {
@@ -189,7 +200,7 @@ export default class Vidstreaming
          }
       }
    }
-   protected async getEpisodes(
+   protected async _getEpisodes(
       id: string | null,
       cb?: (result: string) => void
    ): Promise<string | undefined> {
@@ -230,44 +241,100 @@ export default class Vidstreaming
       }
    }
 
-   async download(output: string, list?: Array<AnimeData>): Promise<void> {
-      const downloadHandler = (data: Array<AnimeData>): void => {
-         let i = 0;
-         const queue = async (): Promise<void> => {
-            const anime = await axios.get(data[i].src, {
-               responseType: 'stream',
-            });
-            const source = fs.createReadStream(anime.data);
-            const stream = fs.createWriteStream(
-               path.join(output, `EP.${data[i].ep + data[i].ext}`)
-            );
-            stream.on('finish', () => {
-               console.log(data[i].title, 'Done');
-               i++;
-               queue();
-            });
-            source.on('error', err => {
-               console.log(err.message);
-               i = 0;
-            });
-            stream.on('error', err => {
-               console.log(err.message);
-            });
-            source.on('data', data => {
-               this.emit('download', data);
-               source.pipe(stream);
-            });
-            source.on('end', () => {
-               stream.end();
-            });
-         };
-      };
+   protected _deletePath(_path: string, _files: Array<string>): void {
+      if (_files.length < 1) {
+         return;
+      }
+      _files.forEach(file => {
+         fs.unlink(path.join(_path, file), err => {
+            if (err.code === 'ENOENT') {
+               console.error('No file present. Exiting...');
+               return;
+            }
+            if (err) this.emit('error', err);
+            return;
+         });
+      });
+   }
+
+   async download(
+      output: string,
+      list: Array<AnimeData>,
+      cb?: () => void
+   ): Promise<void> {
       try {
-         if (list) {
-            downloadHandler(list);
-         } else {
-            this.on('ready', downloadHandler);
-         }
+         const downloadHandler = async (
+            data: Array<AnimeData>
+         ): Promise<void> => {
+            let i = 0;
+            let filenames: Array<string> = [];
+            fs.access(output, fs.constants.F_OK, err => {
+               if (err) {
+                  fs.mkdirSync(output);
+               }
+            });
+            const queue = async (): Promise<void> => {
+               try {
+                  const anime = await axios.get(data[i].src, {
+                     responseType: 'stream',
+                  });
+                  const filename = `EP.${data[i].ep}${
+                     this.res ? '.' + this.res + 'p' : ''
+                  }${data[i].ext}`;
+                  const filepath = path.join(output, filename);
+                  filenames.push(filename);
+                  const data_length = anime.headers['content-length'];
+                  const human_total = require('pretty-bytes')(
+                     Number(data_length)
+                  );
+                  this.emit('queue', { cur: i, total: data.length }, filename, {
+                     length: data_length,
+                     human: human_total,
+                  });
+                  const source = anime.data;
+                  const stream = fs.createWriteStream(filepath);
+                  stream.on('finish', () => {
+                     if (i === data.length - 1) {
+                        this.emit('done');
+                     } else {
+                        i++;
+                        queue();
+                     }
+                  });
+                  source.on('error', err => {
+                     console.log(
+                        err.message || 'Something went wrong.',
+                        'Deleting files...'
+                     );
+                     i = 0;
+                     this._deletePath(output, filenames);
+                  });
+                  stream.on('error', err => {
+                     console.log(
+                        err.message || 'Something went wrong.',
+                        'Deleting files...'
+                     );
+                     this._deletePath(output, filenames);
+                  });
+                  source.on('data', chunk => {
+                     this.emit(
+                        'download',
+                        chunk,
+                        stream.bytesWritten,
+                        filename
+                     );
+                  });
+                  source.on('end', () => {
+                     stream.end();
+                  });
+                  source.pipe(stream);
+               } catch (e) {
+                  throw e;
+               }
+            };
+            await queue();
+         };
+         downloadHandler(list);
       } catch (e) {
          if (this.filter && this.filter.catch) {
             throw e;
@@ -275,11 +342,12 @@ export default class Vidstreaming
             this.emit('error', e);
          }
       }
+      if (cb) cb();
    }
 
    async writeTo(
       output: string,
-      list?: Array<AnimeData>,
+      list: Array<AnimeData>,
       cb?: () => void
    ): Promise<void> {
       try {

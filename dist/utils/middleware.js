@@ -35,8 +35,8 @@ const middleware = (argv, callback) => {
 
       return newArgs.push(arg);
     });
-    argv.E = _lodash.default.uniq(newArgs);
-    argv.episodes = _lodash.default.uniq(newArgs);
+    argv.E = _lodash.default.chain(newArgs).uniq().sortBy().value();
+    argv.episodes = _lodash.default.chain(newArgs).uniq().sortBy().value();
   }
 
   callback(argv);

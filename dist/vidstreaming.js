@@ -17,7 +17,9 @@ var _cheerio = _interopRequireDefault(require("cheerio"));
 
 var _fs = _interopRequireDefault(require("fs"));
 
-var _path = _interopRequireDefault(require("path"));
+var _path2 = _interopRequireDefault(require("path"));
+
+var _url = require("url");
 
 var _events = require("events");
 
@@ -99,8 +101,6 @@ class Vidstreaming extends _events.EventEmitter {
         this.emit('error', e, 'error2');
       }
     } finally {
-      this.emit('ready', result);
-
       if (cb) {
         cb(result);
       } else {
@@ -123,26 +123,23 @@ class Vidstreaming extends _events.EventEmitter {
       const list = $('.listing.items.lists .video-block a');
       const href = [];
       list.each((_i, e) => href.push(e.attribs.href));
-      epNum = href.length;
 
       const asynciterator = async (item) => {
-        const {
-          data
-        } = await instance.get(item);
+        const anime = await instance.get(item);
 
-        const $ = _cheerio.default.load(data);
+        const $ = _cheerio.default.load(anime.data);
 
-        const url = new URL('https:' + $('.play-video iframe')[0].attribs.src);
+        const url = new _url.URL('https:' + $('.play-video iframe')[0].attribs.src);
         const id = url.searchParams.get('id');
         const title = $('.video-info-left h1')[0].children[0].data;
-        const src = await this.getEpisodes(id);
-        const srcUrl = new URL(src).pathname;
+        const src = await this._getEpisodes(id);
+        const srcUrl = new _url.URL(src).pathname;
 
-        const filename = _path.default.basename(srcUrl);
+        const filename = _path2.default.basename(srcUrl);
 
-        const ext = _path.default.extname(srcUrl);
+        const ext = _path2.default.extname(srcUrl);
 
-        const ep = Number(_path.default.basename(item).split('-').pop());
+        const ep = Number(_path2.default.basename(item).split('-').pop());
         const animeData = {
           filename,
           ep,
@@ -158,8 +155,10 @@ class Vidstreaming extends _events.EventEmitter {
 
       if (this.filter && this.filter.episodes) {
         const epilist = this.filter.episodes;
+        epNum = href.filter(ref => epilist.includes(Number(ref.split('-').pop()))).length;
         newHref = await _aigle.Aigle.resolve(href).filter(ref => epilist.includes(Number(ref.split('-').pop()))).map(asynciterator);
       } else {
+        epNum = href.length;
         newHref = await _aigle.Aigle.resolve(href).map(asynciterator);
       }
     } catch (err) {
@@ -179,7 +178,7 @@ class Vidstreaming extends _events.EventEmitter {
     }
   }
 
-  async getEpisodes(id, cb) {
+  async _getEpisodes(id, cb) {
     let results;
 
     try {
@@ -221,47 +220,96 @@ class Vidstreaming extends _events.EventEmitter {
     }
   }
 
-  async download(output, list) {
-    const downloadHandler = data => {
-      let i = 0;
+  _deletePath(_path, _files) {
+    if (_files.length < 1) {
+      return;
+    }
 
-      const queue = async () => {
-        const anime = await _axios.default.get(data[i].src, {
-          responseType: 'stream'
-        });
+    _files.forEach(file => {
+      _fs.default.unlink(_path2.default.join(_path, file), err => {
+        if (err.code === 'ENOENT') {
+          console.error('No file present. Exiting...');
+          return;
+        }
 
-        const source = _fs.default.createReadStream(anime.data);
+        if (err) this.emit('error', err);
+        return;
+      });
+    });
+  }
 
-        const stream = _fs.default.createWriteStream(_path.default.join(output, `EP.${data[i].ep + data[i].ext}`));
-
-        stream.on('finish', () => {
-          console.log(data[i].title, 'Done');
-          i++;
-          queue();
-        });
-        source.on('error', err => {
-          console.log(err.message);
-          i = 0;
-        });
-        stream.on('error', err => {
-          console.log(err.message);
-        });
-        source.on('data', data => {
-          this.emit('download', data);
-          source.pipe(stream);
-        });
-        source.on('end', () => {
-          stream.end();
-        });
-      };
-    };
-
+  async download(output, list, cb) {
     try {
-      if (list) {
-        downloadHandler(list);
-      } else {
-        this.on('ready', downloadHandler);
-      }
+      const downloadHandler = async (data) => {
+        let i = 0;
+        let filenames = [];
+
+        _fs.default.access(output, _fs.default.constants.F_OK, err => {
+          if (err) {
+            _fs.default.mkdirSync(output);
+          }
+        });
+
+        const queue = async () => {
+          try {
+            const anime = await _axios.default.get(data[i].src, {
+              responseType: 'stream'
+            });
+            const filename = `EP.${data[i].ep}${this.res ? '.' + this.res + 'p' : ''}${data[i].ext}`;
+
+            const filepath = _path2.default.join(output, filename);
+
+            filenames.push(filename);
+            const data_length = anime.headers['content-length'];
+
+            const human_total = require('pretty-bytes')(Number(data_length));
+
+            this.emit('queue', {
+              cur: i,
+              total: data.length
+            }, filename, {
+              length: data_length,
+              human: human_total
+            });
+            const source = anime.data;
+
+            const stream = _fs.default.createWriteStream(filepath);
+
+            stream.on('finish', () => {
+              if (i === data.length - 1) {
+                this.emit('done');
+              } else {
+                i++;
+                queue();
+              }
+            });
+            source.on('error', err => {
+              console.log(err.message || 'Something went wrong.', 'Deleting files...');
+              i = 0;
+
+              this._deletePath(output, filenames);
+            });
+            stream.on('error', err => {
+              console.log(err.message || 'Something went wrong.', 'Deleting files...');
+
+              this._deletePath(output, filenames);
+            });
+            source.on('data', chunk => {
+              this.emit('download', chunk, stream.bytesWritten, filename);
+            });
+            source.on('end', () => {
+              stream.end();
+            });
+            source.pipe(stream);
+          } catch (e) {
+            throw e;
+          }
+        };
+
+        await queue();
+      };
+
+      downloadHandler(list);
     } catch (e) {
       if (this.filter && this.filter.catch) {
         throw e;
@@ -269,6 +317,8 @@ class Vidstreaming extends _events.EventEmitter {
         this.emit('error', e);
       }
     }
+
+    if (cb) cb();
   }
 
   async writeTo(output, list, cb) {
