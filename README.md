@@ -1,7 +1,5 @@
 ***Not working anymore... Still fixing things...***
-[The Issue Here](3)
-
-[3]: docs/issue.md
+[The Issue Here](docs/issue.md)
 
 # vidstreaming-api-test
 
