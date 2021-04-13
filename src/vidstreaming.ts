@@ -56,6 +56,10 @@ export interface VidstreamingInterface {
       list?: Array<AnimeData>,
       cb?: () => void
    ): Promise<void>;
+   getFromStreamSB(
+      id: string | null,
+      cb?: (result: string) => void
+   ): Promise<string | undefined>;
 }
 
 export default class Vidstreaming
@@ -371,5 +375,12 @@ export default class Vidstreaming
          }
       }
       if (cb) cb();
+   }
+
+   async getFromStreamSB(
+      id: string | null,
+      cb?: (result: string) => void
+   ): Promise<string | undefined> {
+      
    }
 }
