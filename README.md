@@ -2,6 +2,12 @@
 [The Issue Here](docs/issue.md)
 Wanna contribute? [Create a PR now!](https://github.com/sb-gravity100/vidstreaming-api-test/pulls)
 
+## Todo
+I still have to fix things.
+- Bypass cloudflare captcha on gogo-cdn.com
+- Add streamSB, 4anime support and more
+- Get someone to help me!
+
 # vidstreaming-api-test
 
 Api for downloading or watching anime videos from [gogo-stream.com](1)/[vidstreaming.io](2)
