@@ -44,8 +44,8 @@ export const options: Argv = yargs
     alias: 'resolution',
     type: 'string',
     describe:
-      'Output resolution - 360, 480, 720, 1080.\nIf none defaults to original quality.',
-    choices: ['360', '480', '720', '1080'],
+      'Decepracated -- Output resolution - [360, 480, 720, 1080].\nIf none defaults to original quality.',
+    choices: [],
   })
   .option('E', {
     alias: 'episodes',

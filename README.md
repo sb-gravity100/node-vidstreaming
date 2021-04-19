@@ -1,5 +1,6 @@
 ### ***Not working anymore... Still fixing things...***
 [The Issue Here](docs/issue.md)
+Wanna contribute? [Create a PR now!](https://github.com/sb-gravity100/vidstreaming-api-test/compare)
 
 # vidstreaming-api-test
 

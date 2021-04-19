@@ -2,10 +2,10 @@ import * as puppeteer from 'puppeteer-core';
 
 export interface SSB {
    link: string;
-   (quality: StreamQuality): Promise<any>;
+   get(quality: StreamQuality): Promise<any>;
 }
 
-type StreamQuality = 0 | 1;
+export type StreamQuality = 0 | 1;
 
 export default class StreamSB implements SSB {
    link: string;
@@ -14,7 +14,7 @@ export default class StreamSB implements SSB {
       this.link = link;
    }
 
-   async init(quality: StreamQuality): Promise<any> {
+   async get(quality: StreamQuality): Promise<any> {
       try {
          const browser = await puppeteer.launch();
          const page = await browser.newPage();
