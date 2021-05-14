@@ -1,15 +1,10 @@
 {
-  "name": "@sbgv-100/vidstreaming-anime-downloader",
+  "name": "node-vidstreaming",
   "version": "1.3.0",
   "description": "Api for downloading or watching anime videos from gogo-stream.com/vidstreaming.io",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "transpile": "babel ./src --out-dir ./dist --no-comments --extensions \".js,.ts\"",
-    "clean": "rimraf ./dist",
-    "type": "tsc",
-    "build": "npm-run-all clean transpile type",
-    "watch": "npm run clean & babel ./src --out-dir ./dist --no-comments --extensions \".js,.ts\" -w"
+    "type": "tsc"
   },
   "repository": {
     "type": "git",
@@ -30,35 +25,25 @@
   },
   "homepage": "https://github.com/sb-gravity100/vidstreaming-api-test#readme",
   "dependencies": {
-    "@types/clui": "^0.3.0",
-    "@types/lodash": "^4.14.168",
-    "@types/puppeteer-core": "^5.4.0",
     "aigle": "^1.14.1",
-    "async": "^3.2.0",
     "axios": "^0.21.1",
     "axios-retry": "^3.1.9",
     "boxen": "^5.0.0",
     "chalk": "^4.1.0",
-    "cheerio": "^1.0.0-rc.5",
     "clipboardy": "^2.3.0",
     "clui": "^0.3.6",
     "inquirer": "^8.0.0",
     "inquirer-search-list": "^1.2.6",
     "lodash": "^4.17.21",
+    "node-html-parser": "^3.3.0",
     "pretty-bytes": "^5.6.0",
     "progress": "^2.0.3",
-    "puppeteer-core": "^8.0.0",
     "yargs": "^16.2.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.14",
-    "@babel/core": "^7.13.14",
-    "@babel/node": "^7.13.13",
-    "@babel/plugin-proposal-class-properties": "^7.13.0",
-    "@babel/plugin-transform-runtime": "^7.13.10",
-    "@babel/preset-env": "^7.13.12",
-    "@babel/preset-typescript": "^7.13.0",
-    "@babel/runtime": "^7.13.10",
+    "@types/axios": "^0.14.0",
+    "@types/clui": "^0.3.0",
+    "@types/lodash": "^4.14.168",
     "@types/node": "13",
     "@types/yargs": "^16.0.1",
     "nodemon": "^2.0.7",
@@ -67,9 +52,6 @@
     "typescript": "^4.2.4"
   },
   "nodemonConfig": {
-    "execMap": {
-      "js": "node --harmony --trace-warnings --trace-uncaught --trace-deprecation"
-    },
     "ignore": [
       "dist/"
     ],
@@ -78,6 +60,6 @@
     ]
   },
   "bin": {
-    "vidstreaming": "dist/bin.js"
+    "vidstreaming": "bin/"
   }
 }
