@@ -35,7 +35,6 @@ module.export.outputModeBox = argv => {
    return chalk.white(
       `Title          -   ${chalk.greenBright(argv.anime.title)}
 Output         -   ${chalk.yellow(path.basename(argv.O))}
-Quality        -   ${chalk.red(argv.R ? argv.R + 'p' : 'Original')}
 Episodes       -   ${chalk.cyan(argv.E ? episode_list(argv.E) : 'All')}`
    );
 };
@@ -43,13 +42,11 @@ module.export.outputModeBox = argv =>
    chalk.white(
       `Title          -   ${chalk.greenBright(argv.anime.title)}
 Download Path  -   ${chalk.yellow(argv.D)}
-Quality        -   ${chalk.red(argv.R ? argv.R + 'p' : 'Original')}
 Episodes       -   ${chalk.cyan(argv.E ? episode_list(argv.E) : 'All')}`
    );
 export const printModeBox = argv =>
    chalk.white(
       `Title          -   ${chalk.greenBright(argv.anime.title)}
-Quality        -   ${chalk.red(argv.R ? argv.R + 'p' : 'Original')}
 Episodes       -   ${chalk.cyan(argv.E ? episode_list(argv.E) : 'All')}`
    );
 

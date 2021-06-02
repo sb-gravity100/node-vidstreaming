@@ -1,0 +1,6 @@
+docs/
+*.sublime-*
+*.sublime-project
+*.sublime-workspace
+*.cmd
+*.log

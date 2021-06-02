@@ -1,5 +1,4 @@
 const clui =- require('clui');
-const LoadingIcons = ['⣾⣷', '⣽⣯', '⣻⣟', '⢿⡿', '⡿⢿', '⣟⣻', '⣯⣽', '⣷⣾'];
-const loading = new clui.Spinner('Starting...', LoadingIcons);
+const loading = new clui.Spinner('Starting...');
 
 module.exports = loading;

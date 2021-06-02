@@ -1,7 +1,6 @@
-const { Vidstreaming } = require('../dist');
+const Vidstreaming = require('../dist');
 
-const Anime = new Vidstreaming()
-
-Anime.term('5-toubun').then(results => {
-   console.log(results[0].get())
-})
+Vidstreaming.term('kaifuku').then(async res => {
+   await res[0].getEpisodes({ filter: '1 2 3'})
+   console.log(res[0].get())
+}).catch(console.log)
