@@ -1,25 +1,28 @@
+process.env.DEBUG = 'V*';
 const inquirer = require('inquirer');
 const { options } = require('./utils/args');
-
-if (options.S) {
-  callPrompts(options);
-} else {
-  inquirer
-    .prompt([
-      {
-        name: 'search',
-        message: 'Search Anime',
-        validate(val) {
-          if (!val) {
+const { callPrompts } = require('./utils/call_prompts');
+const PROMPTS = {
+   search: {
+      name: 'search',
+      message: 'Search Anime',
+      default: '',
+      validate(val) {
+         if (!val) {
             return 'Required!';
-          }
-          return true;
-        },
+         }
+         return true;
       },
-    ])
-    .then(answers => {
-      options.S = answers.search
-      options.search = answers.search
-      callPrompts(options)
-    });
-}
+      when: !options.S,
+   },
+};
+
+const bin = async () => {
+   const answers = await inquirer.prompt([PROMPTS.search]);
+   if (answers.search) {
+      options.S = options.search = answers.search;
+   }
+   await callPrompts(options);
+};
+
+bin();
