@@ -1,4 +1,4 @@
-const clipboard = require('clipboardy');
+// const clipboard = require('clipboardy');
 const chalk = require('chalk');
 const fs = require('fs');
 const Vidstreaming = require('../../dist');

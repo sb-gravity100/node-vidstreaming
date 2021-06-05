@@ -2,6 +2,7 @@ process.env.DEBUG = 'V*';
 const inquirer = require('inquirer');
 const { options } = require('./utils/args');
 const { callPrompts } = require('./utils/call_prompts');
+
 const PROMPTS = {
    search: {
       name: 'search',
