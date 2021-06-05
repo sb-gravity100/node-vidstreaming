@@ -1,12 +1,13 @@
 {
-    "compilerOptions": {
-        "target": "ES2016",
-        "module": "CommonJS",
-        "declaration": true,
-        "sourceMap": true,
-        "outDir": "./dist",
-        "strict": true,
-        "baseUrl": "./",
-        "moduleResolution": "Node"
-    }
+   "compilerOptions": {
+      "target": "ES2016",
+      "module": "CommonJS",
+      "declaration": true,
+      "sourceMap": true,
+      "outDir": "./dist",
+      "strict": true,
+      "baseUrl": "./",
+      "moduleResolution": "Node"
+   },
+   "include": ["src/"]
 }
