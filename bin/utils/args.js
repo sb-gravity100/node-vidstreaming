@@ -13,21 +13,23 @@ module.exports.options = yargs
       type: 'string',
       default: null,
    })
-   .option('D', {
-      alias: 'download',
-      describe: 'Download Anime to directory.\n(eg. "some/path/Downloads")',
-      type: 'string',
+   .option('M', {
+      alias: 'method',
+      describe:
+         'Must be `0` to download files or `1` to copy urls to txt file...',
+      type: 'number',
+      default: null,
    })
    .option('O', {
       alias: 'output',
-      describe: 'Output urls to txt.\n(eg. "some/path/Downloads/jujutsu.txt")',
+      describe: 'Must be a directory path or path to txt',
       type: 'string',
    })
    .option('E', {
       alias: 'episodes',
       describe:
          'Values separated by commas or spaces. (eg. "- 1 2 3 4" or "1 2 3 4")',
-      array: true,
+      type: 'string',
+      default: null,
    })
-   .wrap(yargs.terminalWidth())
-   .help().argv;
+   .wrap(yargs.terminalWidth()).argv;

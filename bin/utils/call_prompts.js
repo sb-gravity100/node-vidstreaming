@@ -2,25 +2,13 @@ const chalk = require('chalk');
 const inquirer = require('inquirer');
 const _ = require('lodash');
 const path = require('path');
+const debug = require('debug')('V');
 const { searchUrls } = require('./url_utils');
-// const { middleware } = require('./utils/middleware');
-// const {
-//    searchUrls,
-//    writeUrls,
-//    clipboardUrls,
-//    downloadUrls,
-// } = require('./utils/url_utils');
-// const {
-//    boxxx,
-//    downloadModeBox,
-//    outputModeBox,
-//    printModeBox,
-// } = require('./utils/boxes');
 inquirer.registerPrompt('search-list', require('inquirer-search-list'));
 
 const PROMPTS = {
    method: {
-      type: 'list',
+      type: 'search-list',
       name: 'method',
       default: null,
       message: 'Choose methods',
@@ -30,34 +18,52 @@ const PROMPTS = {
          { name: 'Copy to Clipboard', value: null },
       ],
    },
-   path: {
+   path: method => ({
       name: 'path',
       message: 'Specify file path',
-      validate: val => {
-         const ext = path.extname(val);
-         if (ext && !ext.match(/^\.txt$/i)) {
-            return 'Path must be txt file or a directory';
+      default: '',
+      validate(val) {
+         if (!val) {
+            return 'Must provide a path';
+         }
+         if (method === 1) {
+            const ext = path.extname(val);
+            if (ext !== '.txt') {
+               return 'Path must be txt file or a directory';
+            }
          }
          return true;
       },
-   },
-   results: (res = []) => ({
+      transformer: val => {
+         if (method === 0) {
+            return path.dirname(val);
+         }
+         return val;
+      },
+   }),
+   search: res => ({
       name: 'index',
-      message: 'Choose Anime',
       type: 'search-list',
-      choices: res.map((e, k) => ({ name: e.title, value: k })),
+      message: 'Choose anime',
+      choices: res,
       default: 0,
    }),
 };
 
 module.exports.callPrompts = async options => {
-   const search_results = await searchUrls(options.search);
-   const { index } = await inquirer.prompt([PROMPTS.results(search_results)]);
-   const anime = search_results[index];
+   const res = await searchUrls(options.S).catch(e => {
+      console.error(e.message);
+      process.exit(1);
+   });
+   const { index } = await inquirer.prompt([
+      PROMPTS.search(res.map((e, k) => ({ name: e.title, value: k }))),
+   ]);
    const { method } = await inquirer.prompt([PROMPTS.method]);
-   if (method !== null) {
-      const ans = await inquirer.prompt([PROMPTS.path]);
-      path = ans.path;
+   if (typeof method === 'number') {
+      options.M = options.method = method;
+      const { path: file_path } = await inquirer.prompt([PROMPTS.path(method)]);
+      if (typeof file_path === 'string') {
+         options.O = options.output = file_path;
+      }
    }
-   console.log(options);
 };
