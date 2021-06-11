@@ -1,17 +1,19 @@
 const chalk = require('chalk');
 const inquirer = require('inquirer');
+const { initial } = require('lodash');
 const _ = require('lodash');
 const path = require('path');
 const debug = require('debug')('V');
 const { searchUrls } = require('./url_utils');
 inquirer.registerPrompt('search-list', require('inquirer-search-list'));
 
-const PROMPTS = {
+const PROMPTS = options => ({
    method: {
       type: 'search-list',
       name: 'method',
       default: null,
       message: 'Choose methods',
+      when: !options.M,
       choices: [
          { name: 'Download Files', value: 0 },
          { name: 'Copy URLs to txt file', value: 1 },
@@ -22,6 +24,7 @@ const PROMPTS = {
       name: 'path',
       message: 'Specify file path',
       default: '',
+      when: !options.E,
       validate(val) {
          if (!val) {
             return 'Must provide a path';
@@ -48,22 +51,24 @@ const PROMPTS = {
       choices: res,
       default: 0,
    }),
-};
+});
 
 module.exports.callPrompts = async options => {
+   const PR = PROMPTS(options);
    const res = await searchUrls(options.S).catch(e => {
       console.error(e.message);
       process.exit(1);
    });
    const { index } = await inquirer.prompt([
-      PROMPTS.search(res.map((e, k) => ({ name: e.title, value: k }))),
+      PR.search(res.map((e, k) => ({ name: e.title, value: k }))),
    ]);
-   const { method } = await inquirer.prompt([PROMPTS.method]);
+   const { method } = await inquirer.prompt([PR.method]);
    if (typeof method === 'number') {
-      options.M = options.method = method;
-      const { path: file_path } = await inquirer.prompt([PROMPTS.path(method)]);
+      options.M = options.method = options.M;
+      const { path: file_path } = await inquirer.prompt([PR.path(method)]);
       if (typeof file_path === 'string') {
          options.O = options.output = file_path;
       }
    }
+   await init(options);
 };
