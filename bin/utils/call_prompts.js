@@ -3,42 +3,40 @@ const inquirer = require('inquirer');
 const { initial } = require('lodash');
 const _ = require('lodash');
 const path = require('path');
-const debug = require('debug')('V');
+// const debug = require('debug')('V');
 const { searchUrls } = require('./url_utils');
 inquirer.registerPrompt('search-list', require('inquirer-search-list'));
 
-const PROMPTS = options => ({
+const PROMPTS = () => ({
    method: {
       type: 'search-list',
       name: 'method',
-      default: null,
+      default: 3,
       message: 'Choose methods',
-      when: !options.M,
       choices: [
-         { name: 'Download Files', value: 0 },
-         { name: 'Copy URLs to txt file', value: 1 },
-         { name: 'Copy to Clipboard', value: null },
+         { name: 'Download Files', value: 1 },
+         { name: 'Copy URLs to txt file', value: 2 },
+         { name: 'Copy to Clipboard', value: 3 },
       ],
    },
    path: method => ({
       name: 'path',
       message: 'Specify file path',
-      default: '',
-      when: !options.E,
+      default: 3,
       validate(val) {
          if (!val) {
             return 'Must provide a path';
          }
-         if (method === 1) {
+         if (method === 2) {
             const ext = path.extname(val);
             if (ext !== '.txt') {
-               return 'Path must be txt file or a directory';
+               return 'Path must be txt file';
             }
          }
          return true;
       },
       transformer: val => {
-         if (method === 0) {
+         if (method === 1) {
             return path.dirname(val);
          }
          return val;
@@ -54,7 +52,7 @@ const PROMPTS = options => ({
 });
 
 module.exports.callPrompts = async options => {
-   const PR = PROMPTS(options);
+   const PR = PROMPTS();
    const res = await searchUrls(options.S).catch(e => {
       console.error(e.message);
       process.exit(1);
@@ -62,13 +60,23 @@ module.exports.callPrompts = async options => {
    const { index } = await inquirer.prompt([
       PR.search(res.map((e, k) => ({ name: e.title, value: k }))),
    ]);
-   const { method } = await inquirer.prompt([PR.method]);
-   if (typeof method === 'number') {
-      options.M = options.method = options.M;
-      const { path: file_path } = await inquirer.prompt([PR.path(method)]);
-      if (typeof file_path === 'string') {
+   if (!options.M) {
+      const { method } = await inquirer.prompt([PR.method]);
+      options.M = options.method = method;
+      if (options.M < 3) {
+         const { path: file_path } = await inquirer.prompt([PR.path(method)]);
          options.O = options.output = file_path;
       }
    }
-   await init(options);
+   await init(res[index], options);
+};
+
+const init = async (instance, options) => {
+   switch (options.M) {
+      case 1:
+         break;
+
+      default:
+         break;
+   }
 };
