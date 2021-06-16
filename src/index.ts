@@ -42,7 +42,7 @@ export async function term(
    debug('Found %s results', results.length);
    const _arr = await Aigle.resolve(results).map(async a => {
       const href = a.attrs.href.toString();
-      debug('Title: %s', a.textContent);
+      // debug('Title: %s', a.textContent);
       const episodes = await getEpisodeData(href);
       return new SearchResult({
          title: a.textContent,
