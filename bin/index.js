@@ -14,16 +14,18 @@ const PROMPTS = {
          }
          return true;
       },
-      when: !options.S,
    },
 };
 
 const bin = async () => {
-   const answers = await inquirer.prompt([PROMPTS.search]);
-   if (answers.search) {
-      options.S = options.search = answers.search;
+   if (!options.S) {
+      const answers = await inquirer.prompt([PROMPTS.search]);
+      if (answers.search) {
+         options.S = options.search = answers.search;
+      }
    }
-   await callPrompts(options);
+   console.log(options);
+   // await callPrompts(options);
 };
 
 bin();

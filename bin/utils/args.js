@@ -16,7 +16,7 @@ module.exports.options = yargs
    .option('M', {
       alias: 'method',
       describe:
-         'Must be `0` to download files or `1` to copy urls to txt file...',
+         'Must be `1` to download files or `2` to copy urls to txt file...',
       type: 'number',
       default: null,
    })
@@ -27,9 +27,8 @@ module.exports.options = yargs
    })
    .option('E', {
       alias: 'episodes',
-      describe:
-         'Values separated by commas or spaces. (eg. "- 1 2 3 4" or "1 2 3 4")',
-      type: 'string',
+      describe: 'Values separated by spaces. (eg. "- 1 2 3 4" or "1 2 3 4")',
+      type: 'array',
       default: null,
    })
    .wrap(yargs.terminalWidth()).argv;

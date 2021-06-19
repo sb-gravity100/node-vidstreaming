@@ -22,11 +22,10 @@ const PROMPTS = () => ({
       message: 'Choose methods',
       choices: METHODS,
    },
-   path: method => ({
+   path: (method, title = '') => ({
       name: 'path',
       message: 'Specify file path',
-      default:
-         method === 2 ? path.join(process.cwd(), 'results.txt') : process.cwd(),
+      default: title,
       validate(val) {
          if (!val) {
             return 'Must provide a path';
@@ -100,11 +99,17 @@ module.exports.callPrompts = async options => {
       const { method } = await inquirer.prompt([PR.method]);
       options.M = options.method = method;
       if (options.M < 3) {
-         const { path: file_path } = await inquirer.prompt([PR.path(method)]);
+         const filename =
+            res[index].title.replace(/[^\w]+/gi, '_').replace(/[^\w]+/gi, '_') +
+            '.txt';
+         const dirname = filename.replace(/\.txt$/i, '');
+         const { path: file_path } = await inquirer.prompt([
+            PR.path(method, options.M === 2 ? filename : dirname),
+         ]);
          options.O = options.output = file_path;
       }
    }
-   if (options.E === null) {
+   if (!options.E) {
       const { filter } = await inquirer.prompt([
          PR.filter(res[index].episodes),
       ]);
