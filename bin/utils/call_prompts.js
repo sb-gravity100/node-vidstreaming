@@ -4,9 +4,10 @@ const { initial, method } = require('lodash');
 const _ = require('lodash');
 const path = require('path');
 const { format } = require('util');
+const boxen = require('boxen');
 const { SearchResult } = require('../../dist/classes/search_result');
 const { searchUrls } = require('./url_utils');
-const debug = require('debug')('V');
+const filterString = require('../../dist/funcs/filter_string');
 inquirer.registerPrompt('search-list', require('inquirer-search-list'));
 
 const METHODS = [
@@ -25,7 +26,7 @@ const PROMPTS = () => ({
    path: (method, title = '') => ({
       name: 'path',
       message: 'Specify file path',
-      default: title,
+      default: path.join(process.cwd(), method === 2 ? title + '.txt' : title),
       validate(val) {
          if (!val) {
             return 'Must provide a path';
@@ -63,18 +64,20 @@ const PROMPTS = () => ({
             value: '-',
          },
          {
-            name: 'All episodes',
+            name: `${eps[0].ep}-${eps[eps.length - 1].ep}`,
             value: _.range(eps[0].ep, eps[eps.length - 1].ep + 1),
          },
          {
-            name: 'First Half',
+            name: `${eps[0].ep}-${Math.floor(eps[eps.length - 1].ep / 2)}`,
             value: _.range(
                eps[0].ep,
                Math.floor(eps[eps.length - 1].ep / 2) + 1
             ),
          },
          {
-            name: 'Last Half',
+            name: `${Math.floor(eps[eps.length - 1].ep / 2) + 1}-${
+               eps[eps.length - 1].ep
+            }`,
             value: _.range(
                Math.floor(eps[eps.length - 1].ep / 2),
                eps[eps.length - 1].ep + 1
@@ -116,6 +119,20 @@ module.exports.callPrompts = async options => {
       options.E = options.episodes = filter.length
          ? _.chain(filter).flattenDeep().uniq().sortBy().value()
          : null;
+   } else {
+      // console.log(options.E);
+      let rm = null;
+      if (options.E[0] === '-') {
+         rm = options.E.shift();
+      }
+      options.E = options.episodes = filterString.format(
+         options.E.join(' '),
+         res[index].eps
+      );
+      if (typeof rm === 'string') {
+         options.E.unshift(rm);
+      }
+      // console.log(options.E);
    }
    await init(res[index], options);
 };
@@ -123,9 +140,10 @@ module.exports.callPrompts = async options => {
 const init = async (instance, options) => {
    if (instance instanceof SearchResult) {
       const method_msg = METHODS.find(e => e.value === options.M).name;
-      debug('ANIME:', instance.title);
-      debug('EPISODES:', instance.eps);
-      debug('METHOD:', method_msg);
+      let msgs = [];
+      msgs[0] = ['ANIME:    ', instance.title];
+      msgs[1] = ['EPISODES: ', instance.eps];
+      msgs[2] = ['METHOD:   ', method_msg];
       let _formatted = format(
          '%s - %s',
          options.E[0] === '-' ? options.E[1] : options.E[0],
@@ -133,13 +151,25 @@ const init = async (instance, options) => {
       );
       if (options.E) {
          if (options.E[0] === '-') {
-            _formatted = 'Remove - ' + _formatted;
+            _formatted = 'Excluding episodes ' + _formatted;
+         } else {
+            _formatted = 'Including episodes ' + _formatted;
          }
-         debug('FILTERS:', _formatted);
+         msgs[3] = ['FILTERS:  ', _formatted];
       }
       if (options.M < 3) {
-         debug('PATH:', options.O);
+         msgs[4] = ['PATH:     ', options.O];
       }
+      msgs = msgs.map(e => {
+         e[0] = chalk.greenBright(e[0]);
+         return e.join(' ');
+      });
+      console.log(
+         boxen(Object.values(msgs).join('\n'), {
+            padding: 1,
+            borderStyle: 'double',
+         })
+      );
       // switch (options.M) {
       //    case 1:
       //       break;

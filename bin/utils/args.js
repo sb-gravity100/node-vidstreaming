@@ -27,7 +27,7 @@ module.exports.options = yargs
    })
    .option('E', {
       alias: 'episodes',
-      describe: 'Values separated by spaces. (eg. "- 1 2 3 4" or "1 2 3 4")',
+      describe: 'Values separated by spaces. (eg. "1 2 3 4" or "R 1 2 3 4")',
       type: 'array',
       default: null,
    })

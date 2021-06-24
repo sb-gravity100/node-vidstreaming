@@ -24,8 +24,11 @@ const bin = async () => {
          options.S = options.search = answers.search;
       }
    }
-   console.log(options);
-   // await callPrompts(options);
+   if (typeof options.E[0] === 'string' && options.E[0].match(/R/i)) {
+      options.E[0] = options.episodes[0] = '-';
+   }
+   // console.log(options);
+   await callPrompts(options);
 };
 
 bin();
