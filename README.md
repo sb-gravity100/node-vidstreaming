@@ -1,6 +1,5 @@
-### ***Not working anymore... Still fixing things...***
-[The Issue Here](docs/issue.md)
-Wanna contribute? [Create a PR now!](https://github.com/sb-gravity100/vidstreaming-api-test/pulls)
+### This is project is going to be abandoned
+Vidstreaming already has full cloudflare protection so it's already useless.
 
 ## Todo
 I still have to fix things.
