@@ -1,4 +1,4 @@
-### This is project is going to be abandoned
+# This is project is going to be abandoned
 Vidstreaming already has full cloudflare protection so it's already useless.
 
 ## Todo
