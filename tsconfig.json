@@ -3,11 +3,11 @@
       "target": "ES2016",
       "module": "CommonJS",
       "declaration": true,
-      "sourceMap": true,
+      "sourceMap": false,
       "outDir": "./dist",
       "strict": true,
-      "baseUrl": "./",
-      "moduleResolution": "Node"
+      "baseUrl": "./"
    },
-   "include": ["src/"]
+   "include": ["src/"],
+   "exclude": ["node_modules/", "bin/"]
 }

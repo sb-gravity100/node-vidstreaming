@@ -11,14 +11,12 @@ module.exports.options = yargs
       alias: 'search',
       describe: 'Anime to search for',
       type: 'string',
-      default: null,
    })
    .option('M', {
       alias: 'method',
       describe:
          'Must be `1` to download files or `2` to copy urls to txt file...',
       type: 'number',
-      default: null,
    })
    .option('O', {
       alias: 'output',
@@ -29,6 +27,5 @@ module.exports.options = yargs
       alias: 'episodes',
       describe: 'Values separated by spaces. (eg. "1 2 3 4" or "R 1 2 3 4")',
       type: 'array',
-      default: null,
    })
-   .wrap(yargs.terminalWidth()).argv;
+   .wrap(yargs.terminalWidth());

@@ -6,7 +6,7 @@ const path = require('path');
 const { format } = require('util');
 const boxen = require('boxen');
 const { SearchResult } = require('../../dist/classes/search_result');
-const { searchUrls } = require('./url_utils');
+const { searchUrls, clipboardUrls, GetEpisodes } = require('./url_utils');
 const filterString = require('../../dist/funcs/filter_string');
 inquirer.registerPrompt('search-list', require('inquirer-search-list'));
 
@@ -116,9 +116,11 @@ module.exports.callPrompts = async options => {
       const { filter } = await inquirer.prompt([
          PR.filter(res[index].episodes),
       ]);
-      options.E = options.episodes = filter.length
-         ? _.chain(filter).flattenDeep().uniq().sortBy().value()
-         : null;
+      console.log(filter);
+      options.E = options.episodes =
+         filter.length > 0
+            ? _.chain(filter).flattenDeep().uniq().sortBy().value()
+            : null;
    } else {
       // console.log(options.E);
       let rm = null;
@@ -164,14 +166,19 @@ const init = async (instance, options) => {
          e[0] = chalk.greenBright(e[0]);
          return e.join(' ');
       });
+      // console.log(options);
       console.log(
          boxen(Object.values(msgs).join('\n'), {
             padding: 1,
             borderStyle: 'double',
          })
       );
+
+      const FoundEpisodes = await GetEpisodes(instance, options);
+      console.log(FoundEpisodes.length);
       // switch (options.M) {
-      //    case 1:
+      //    case 3:
+      //       await clipboardUrls(instance, options);
       //       break;
 
       //    default:

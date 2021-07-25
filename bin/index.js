@@ -18,17 +18,19 @@ const PROMPTS = {
 };
 
 const bin = async () => {
-   if (!options.S) {
+   const opts = options.argv;
+   if (!opts.S) {
       const answers = await inquirer.prompt([PROMPTS.search]);
       if (answers.search) {
-         options.S = options.search = answers.search;
+         opts.S = opts.search = answers.search;
       }
    }
-   if (typeof options.E[0] === 'string' && options.E[0].match(/R/i)) {
-      options.E[0] = options.episodes[0] = '-';
+   if (opts.E && typeof opts.E[0] === 'string' && opts.E[0].match(/R/i)) {
+      opts.E.splice(0, 1, '-');
+      opts.episodes.splice(0, 1, '-');
    }
-   // console.log(options);
-   await callPrompts(options);
+   // console.log(opts);
+   await callPrompts(opts);
 };
 
-bin();
+bin().catch(console.log);
