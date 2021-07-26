@@ -11,10 +11,12 @@ import { instance } from '../axios_instance';
 import { FCDN, MirrorType } from './mirrors';
 import { AxiosResponse, AxiosError } from 'axios';
 import * as filterer from '../funcs/filter_string';
+import * as qs from 'querystring';
 
 export class EpisodeData extends PropClass<EpisodeDataJSON> {
    constructor(props: EpisodeDataJSON) {
       super(props);
+      this._props.sources = props.sources || [];
    }
 
    get name() {
@@ -26,38 +28,42 @@ export class EpisodeData extends PropClass<EpisodeDataJSON> {
    get ep() {
       return this._props.ep;
    }
+   get sources() {
+      return this._props.sources;
+   }
 
    async getSources() {
-      const episode: AxiosResponse<string> = await instance
-         .get(this.link || '')
-         .catch((e: AxiosError) => {
-            throw e.toJSON();
-         });
-      const document = parse(episode.data);
-      const frame = document.querySelector(
-         'div.watch_play > div.play-video > iframe'
-      );
-      const src = new URL('https:' + frame.attributes.src);
-      const episodeID = src.searchParams.get('id') || '';
-      // console.log(episodeID);
-      const sources = await this.getPossibleDownloads(episodeID);
-      this._props.sources = sources;
-      return this._props.sources;
+      try {
+         const episode: AxiosResponse<string> = await instance
+            .get(this.link || '')
+            .catch((e: AxiosError) => {
+               throw e.toJSON();
+            });
+         const document = parse(episode.data);
+         const frame = document.querySelector(
+            'div.watch_play > div.play-video > iframe'
+         );
+         const src = new URL('https:' + frame.attributes.src);
+         const episodeID = src.searchParams.get('id') || '';
+         // console.log(episodeID);
+         const sources = await this.getPossibleDownloads(episodeID);
+         this._props.sources = sources;
+         return this._props.sources;
+      } catch (e) {
+         throw e;
+      }
    }
 
    protected async getPossibleDownloads(id: string) {
       try {
-         const download = await instance
-            .get('/download', {
-               params: {
-                  id,
-               },
-            })
-            .catch((e: AxiosError) => {
-               throw e.toJSON();
-            });
+         const query = qs.stringify({
+            id,
+         });
+         const download = await instance.get('/download' + query);
+         console.log(download.data);
          const document = parse(download.data);
-         const mirrors = document.querySelectorAll('.mirror_link .dowload a');
+         const mirrors = document.querySelectorAll('div.mirror_link a');
+         console.log(mirrors);
          const supportedMirrors = mirrors
             .map(e => {
                return {
@@ -92,6 +98,9 @@ export class EpisodeData extends PropClass<EpisodeDataJSON> {
             });
          return supportedMirrors;
       } catch (e) {
+         if (e.isAxiosError) {
+            return e.toJSON();
+         }
          throw e;
       }
    }
@@ -135,14 +144,15 @@ export class SearchResult extends PropClass<SearchResultJSON> {
             return true;
          };
          const asyncIterator = async (ep: EpisodeData) => {
-            await ep.getSources();
-            return ep;
+            return ep.getSources();
          };
-         const resolved = await Aigle.resolve(this._episodes)
+         const promiseChain = _.chain(this._episodes)
             .filter(filterIterator)
-            .map(asyncIterator);
-         this._episodes = _.sortBy(resolved, ['ep']);
-         this._props.episodes = _.sortBy(resolved, ['ep']).map(e => e.get());
+            .map(asyncIterator)
+            .value();
+         await Promise.all(promiseChain);
+         this._episodes = _.sortBy(this._episodes, ['ep']);
+         this._props.episodes = this._episodes.map(e => e.get());
          return this._episodes;
       } catch (e) {
          throw e;

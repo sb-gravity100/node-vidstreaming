@@ -136,7 +136,7 @@ module.exports.callPrompts = async options => {
       }
       // console.log(options.E);
    }
-   await init(res[index], options);
+   await init(res[index], options).catch(console.log);
 };
 
 const init = async (instance, options) => {
@@ -175,7 +175,7 @@ const init = async (instance, options) => {
       );
 
       const FoundEpisodes = await GetEpisodes(instance, options);
-      console.log(FoundEpisodes.length);
+      console.log(await FoundEpisodes[0].getSources());
       // switch (options.M) {
       //    case 3:
       //       await clipboardUrls(instance, options);
