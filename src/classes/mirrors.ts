@@ -28,8 +28,9 @@ export class FCDN extends MirrorType<1, string> {
 
    async getSources(): Promise<MirrorLink<1, FCDNLinks[]>> {
       try {
-         const url = path.basename(new URL(this.links).pathname);
-         const link = 'https://fcdn.stream/api/source/' + url;
+         const fcdn = new URL(this.links);
+         const url = path.basename(fcdn.pathname);
+         const link = new URL('/api/source/' + url, fcdn.host).href;
          const { data } = await axios({
             data: null,
             method: 'POST',

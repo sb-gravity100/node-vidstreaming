@@ -11,7 +11,7 @@ export async function getEpisodeData(link: string) {
    const document = parse(anime.data);
    const episodes = await Aigle.resolve(
       document.querySelectorAll('.video-info-left ul.listing .video-block a')
-   ).map(a => ({
+   ).map((a) => ({
       name: a.querySelector('.name').textContent.trim(),
       link: a.attributes.href,
       ep: Number(a.attributes.href.split('-').pop()),
@@ -23,7 +23,7 @@ export async function term(
    term: string
 ): Promise<Array<SearchResult> | undefined> {
    const anime = await instance
-      .get('/ajax-search.html', {
+      .get('/search.html', {
          params: {
             keyword: term,
          },
@@ -31,21 +31,23 @@ export async function term(
       .catch((e: AxiosError) => {
          throw e.toJSON();
       });
-   if (anime.data.content === '' || !anime.data.content) {
+   const document = parse(anime.data);
+   const results = document.querySelectorAll('.listing .video-block a');
+   if (!results.length) {
       throw {
          message: 'No anime data found',
          nanme: 'ANIMENOTFOUND',
       };
    }
-   const document = parse(anime.data.content);
-   const results = document.querySelectorAll('ul a');
    debug('Found %s results', results.length);
-   const _arr = await Aigle.resolve(results).map(async a => {
+   const _arr = await Aigle.resolve(results).map(async (a) => {
       const href = a.attrs.href.toString();
-      debug('Title: %s', a.textContent);
       const episodes = await getEpisodeData(href);
       return new SearchResult({
-         title: a.textContent,
+         title: a
+            .querySelector('.name')
+            .textContent.replace(/episode\s+\d+/i, '')
+            .trim(),
          link: href,
          episodes,
       });

@@ -59,14 +59,14 @@ export class EpisodeData extends PropClass<EpisodeDataJSON> {
          const document = parse(download.data);
          const mirrors = document.querySelectorAll('.mirror_link .dowload a');
          const supportedMirrors = mirrors
-            .map(e => {
+            .map((e) => {
                return {
                   links: e.getAttribute('href') || '',
                   name: e.textContent.trim(),
                };
             })
-            .filter(e => /(HDP|XSTREAMCDN)/i.test(e.name))
-            .map(e => {
+            .filter((e) => /(FULLHDP|HDP|XSTREAMCDN)/i.test(e.name))
+            .map((e) => {
                e.name = e.name
                   .replace(/(download|\s*)/gi, '')
                   .replace(/[\(\)]/gi, '')
@@ -74,7 +74,6 @@ export class EpisodeData extends PropClass<EpisodeDataJSON> {
                   .replace(/[\W]/gi, '')
                   .trim()
                   .toUpperCase();
-               // console.log(e.name)
                if (e.name.match(/HDP/i))
                   return new MirrorType({
                      ...e,
@@ -102,7 +101,7 @@ export class SearchResult extends PropClass<SearchResultJSON> {
 
    constructor(props: SearchResultJSON) {
       super(props);
-      this._episodes = _.map(props.episodes, ep => new EpisodeData(ep));
+      this._episodes = _.map(props.episodes, (ep) => new EpisodeData(ep));
    }
 
    get title() {
@@ -142,7 +141,7 @@ export class SearchResult extends PropClass<SearchResultJSON> {
             .filter(filterIterator)
             .map(asyncIterator);
          this._episodes = _.sortBy(resolved, ['ep']);
-         this._props.episodes = _.sortBy(resolved, ['ep']).map(e => e.get());
+         this._props.episodes = _.sortBy(resolved, ['ep']).map((e) => e.get());
          return this._episodes;
       } catch (e) {
          throw e;
