@@ -105,4 +105,4 @@ typings/
 *.sublime-workspace
 *.cmd
 dist/
-test/
+test/*.text
