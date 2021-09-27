@@ -25,10 +25,13 @@ async function boot() {
    const anime = searchRes[index];
    const eps = await anime.getEpisodes();
    const sources = await Promise.all(eps.map((e) => e.getSources()));
+
+   var fcdn = sources.map((e) => e.find((f) => f instanceof FCDN));
    var HDP = sources.map((e) => e.find((f) => f.name === 'HDP'));
+   // console.log(fcdn);
    await fs.promises.writeFile(
       __dirname + '/' + _.snakeCase(anime.title) + '.txt',
-      HDP.map((e) => e.links).join('\n')
+      HDP.map((e) => e && e.links).join('\n')
    );
 }
 
