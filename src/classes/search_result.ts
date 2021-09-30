@@ -13,6 +13,7 @@ import { AxiosResponse, AxiosError } from 'axios';
 import * as filterer from '../funcs/filter_string';
 
 export class EpisodeData extends PropClass<EpisodeDataJSON> {
+   private _id?: string;
    constructor(props: EpisodeDataJSON) {
       super(props);
    }
@@ -27,9 +28,28 @@ export class EpisodeData extends PropClass<EpisodeDataJSON> {
       return this._props.ep;
    }
 
+   getId() {
+      if (!this._id) {
+         instance
+            .get<string>(this.link as any)
+            .then((episode) => {
+               const document = parse(episode.data);
+               const frame = document.querySelector(
+                  'div.watch_play > div.play-video > iframe'
+               );
+               const src = new URL('https:' + frame.attributes.src);
+               this._id = src.searchParams.get('id') as string;
+            })
+            .catch((e: AxiosError) => {
+               throw e.toJSON();
+            });
+      }
+      return this._id;
+   }
+
    async getSources() {
-      const episode: AxiosResponse<string> = await instance
-         .get(this.link || '')
+      const episode = await instance
+         .get<string>(this.link as any)
          .catch((e: AxiosError) => {
             throw e.toJSON();
          });
@@ -38,9 +58,9 @@ export class EpisodeData extends PropClass<EpisodeDataJSON> {
          'div.watch_play > div.play-video > iframe'
       );
       const src = new URL('https:' + frame.attributes.src);
-      const episodeID = src.searchParams.get('id') || '';
+      this._id = src.searchParams.get('id') as string;
       // console.log(episodeID);
-      const sources = await this.getPossibleDownloads(episodeID);
+      const sources = await this.getPossibleDownloads(this._id);
       this._props.sources = sources;
       return this._props.sources;
    }
